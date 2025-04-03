@@ -328,40 +328,34 @@ export default function HistoryTab() {
                 <tbody className="divide-y divide-gray-800 bg-black">
                   {filteredItems.length > 0 ? (
                     filteredItems.map((item, index) => (
-                      <Dialog key={item.id} open={selectedArticleId === item.id} onOpenChange={(open) => !open && setSelectedArticleId(null)}>
-                        <DialogTrigger asChild>
-                          <tr 
-                            className={`${index % 2 === 0 ? 'bg-black' : 'bg-slate-900/30'} cursor-pointer hover:bg-slate-800/50 transition-colors`}
-                            onClick={() => setSelectedArticleId(item.id)}
-                          >
-                            <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-slate-300 sm:pl-6">
-                              {item.title}
-                            </td>
-                            <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-400">{item.source || 'Unknown'}</td>
-                            <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-400">
-                              {new Date(item.analyzedAt).toLocaleDateString()}
-                            </td>
-                            <td className="whitespace-nowrap px-3 py-4 text-sm">
-                              <div className="w-24">
-                                <BiasScale score={item.biasScore} mini maxScore={100} />
-                              </div>
-                              <span className={`text-xs ${getBiasLabelColor(item.biasScore)}`}>
-                                {getBiasLabel(item.biasScore)}
-                              </span>
-                            </td>
-                            <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                              <span className="text-indigo-400 flex items-center justify-end">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                  <path d="M18 15l-6-6-6 6"/>
-                                </svg>
-                              </span>
-                            </td>
-                          </tr>
-                        </DialogTrigger>
-                        {selectedArticleId === item.id && (
-                          <ArticleDetailDialog articleId={item.id} />
-                        )}
-                      </Dialog>
+                      <tr 
+                        key={item.id}
+                        className={`${index % 2 === 0 ? 'bg-black' : 'bg-slate-900/30'} cursor-pointer hover:bg-slate-800/50 transition-colors`}
+                        onClick={() => setSelectedArticleId(item.id)}
+                      >
+                        <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-slate-300 sm:pl-6">
+                          {item.title}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-400">{item.source || 'Unknown'}</td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-400">
+                          {new Date(item.analyzedAt).toLocaleDateString()}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm">
+                          <div className="w-24">
+                            <BiasScale score={item.biasScore} mini maxScore={100} />
+                          </div>
+                          <span className={`text-xs ${getBiasLabelColor(item.biasScore)}`}>
+                            {getBiasLabel(item.biasScore)}
+                          </span>
+                        </td>
+                        <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                          <span className="text-indigo-400 flex items-center justify-end">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M18 15l-6-6-6 6"/>
+                            </svg>
+                          </span>
+                        </td>
+                      </tr>
                     ))
                   ) : (
                     <tr>
@@ -407,6 +401,16 @@ export default function HistoryTab() {
                 </Button>
               </div>
             </div>
+            
+            {/* Add a single Dialog component outside the loop for better performance */}
+            <Dialog 
+              open={selectedArticleId !== null} 
+              onOpenChange={(open) => !open && setSelectedArticleId(null)}
+            >
+              {selectedArticleId !== null && (
+                <ArticleDetailDialog articleId={selectedArticleId} />
+              )}
+            </Dialog>
           </>
         )}
       </CardContent>

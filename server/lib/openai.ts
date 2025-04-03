@@ -376,12 +376,12 @@ export async function compareSources(request: SourceComparisonRequest): Promise<
     
     // Parse the result - ensuring it has the expected structure
     if (Array.isArray(fallbackResult)) {
-      return fallbackResult.map(item => ({
+      return fallbackResult.map((item: SourceComparisonResult) => ({
         ...item,
         explanation: item.explanation + " (Note: This is an example analysis due to NewsAPI rate limits.)"
       }));
     } else if (fallbackResult.results && Array.isArray(fallbackResult.results)) {
-      return fallbackResult.results.map(item => ({
+      return fallbackResult.results.map((item: SourceComparisonResult) => ({
         ...item,
         explanation: item.explanation + " (Note: This is an example analysis due to NewsAPI rate limits.)"
       }));
