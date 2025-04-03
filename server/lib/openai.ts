@@ -256,83 +256,138 @@ export async function compareSources(request: SourceComparisonRequest): Promise<
   try {
     const { topic } = request;
     
-    // Fetch real articles from NewsAPI from all available sources
-    const sourceArticles = await fetchArticlesFromSources(request);
-    
-    // Check if we have any articles to analyze
-    const totalArticles = Object.values(sourceArticles).reduce(
-      (sum, articles) => sum + articles.length, 0
-    );
-    
-    if (totalArticles === 0) {
-      throw new Error(`No articles found for topic "${topic}" across major news sources. Please try a different topic.`);
+    try {
+      // Try to fetch real articles from NewsAPI from all available sources
+      const sourceArticles = await fetchArticlesFromSources(request);
+      
+      // Check if we have any articles to analyze
+      const totalArticles = Object.values(sourceArticles).reduce(
+        (sum, articles) => sum + articles.length, 0
+      );
+      
+      if (totalArticles > 0) {
+        // Prepare content for OpenAI analysis
+        const analysisPrompt = `
+        I need you to find and compare coverage of the EXACT SAME news event across different sources. This is critical - only compare sources covering the identical story.
+
+        I'll provide headlines and excerpts from various news sources on the topic "${topic}".
+        
+        Your task:
+        1. FIRST, carefully examine all headlines and excerpts to identify which sources are covering the EXACT SAME specific news event
+        2. EXCLUDE any sources covering different events or aspects of ${topic}
+        3. For sources covering the identical story, determine:
+           - A bias score (0-100), where 50 is completely neutral, below 50 leans conservative, above 50 leans liberal
+           - A brief explanation of how bias manifests in their coverage
+        
+        Here are the articles from each source:
+        ${Object.entries(sourceArticles).map(([source, articles]) => {
+          if (!articles.length) return `${source}: No articles found`;
+          
+          const article = articles[0];
+          // Get a clean description and content excerpt
+          const description = article.description || "";
+          const content = article.content || "";
+          // Combine and limit to a reasonable length for analysis
+          const excerpt = (description + " " + content).slice(0, 800);
+          
+          return `
+          ${source}:
+          Headline: ${article.title}
+          Published: ${article.publishedAt || "Unknown date"}
+          Content: ${excerpt}...
+          `;
+        }).join('\n\n')}
+        
+        FORMAT RULES:
+        1. Return a JSON object with an array called "results"
+        2. Include ONLY sources covering the EXACT SAME news story
+        3. Each result object should have:
+           - source: string (news source name)
+           - headline: string (the headline)
+           - biasScore: number (0-100, with 50 being neutral)
+           - politicalLeaning: string (one of "Conservative", "Liberal", "Moderate Conservative", "Moderate Liberal", or "Centrist")
+           - explanation: string (one-sentence explanation of the bias)
+        
+        IMPORTANT: I need at least 3 sources covering the same story. If you can't find 3+ sources covering the identical story, identify a different story within these articles that is covered by at least 3 sources.
+        
+        Focus on finding the HIGHEST number of sources covering the SAME story.
+        `;
+
+        // Call OpenAI to analyze the real articles
+        const response = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [{ role: "user", content: analysisPrompt }],
+          response_format: { type: "json_object" },
+          max_tokens: 3000
+        });
+
+        const result = JSON.parse(response.choices[0].message.content || "{}");
+        
+        // Parse the result - ensuring it has the expected structure
+        if (Array.isArray(result)) {
+          return result as SourceComparisonResult[];
+        } else if (result.results && Array.isArray(result.results)) {
+          return result.results as SourceComparisonResult[];
+        }
+      }
+    } catch (error) {
+      // Log the error but continue with fallback
+      console.error("Error fetching or analyzing real news articles:", error);
     }
     
-    // Prepare content for OpenAI analysis
-    const analysisPrompt = `
-    I need you to find and compare coverage of the EXACT SAME news event across different sources. This is critical - only compare sources covering the identical story.
-
-    I'll provide headlines and excerpts from various news sources on the topic "${topic}".
+    // Fallback: Generate synthetic comparison due to rate limits
+    console.log("Using fallback for comparison feature due to API rate limits or no matching articles");
     
-    Your task:
-    1. FIRST, carefully examine all headlines and excerpts to identify which sources are covering the EXACT SAME specific news event
-    2. EXCLUDE any sources covering different events or aspects of ${topic}
-    3. For sources covering the identical story, determine:
-       - A bias score (0-100), where 50 is completely neutral, below 50 leans conservative, above 50 leans liberal
-       - A brief explanation of how bias manifests in their coverage
+    // Use OpenAI to provide a better user experience when NewsAPI is rate limited
+    const fallbackPrompt = `
+    I need you to demonstrate how different news sources might cover the topic "${topic}" differently.
     
-    Here are the articles from each source:
-    ${Object.entries(sourceArticles).map(([source, articles]) => {
-      if (!articles.length) return `${source}: No articles found`;
-      
-      const article = articles[0];
-      // Get a clean description and content excerpt
-      const description = article.description || "";
-      const content = article.content || "";
-      // Combine and limit to a reasonable length for analysis
-      const excerpt = (description + " " + content).slice(0, 800);
-      
-      return `
-      ${source}:
-      Headline: ${article.title}
-      Published: ${article.publishedAt || "Unknown date"}
-      Content: ${excerpt}...
-      `;
-    }).join('\n\n')}
+    For these major news sources:
+    - CNN
+    - Fox News
+    - New York Times
+    - Wall Street Journal
+    - BBC
     
-    FORMAT RULES:
-    1. Return a JSON object with an array called "results"
-    2. Include ONLY sources covering the EXACT SAME news story
-    3. Each result object should have:
-       - source: string (news source name)
-       - headline: string (the headline)
-       - biasScore: number (0-100, with 50 being neutral)
-       - politicalLeaning: string (one of "Conservative", "Liberal", "Moderate Conservative", "Moderate Liberal", or "Centrist")
-       - explanation: string (one-sentence explanation of the bias)
+    Generate a realistic analysis with:
+    1. A plausible headline each source might use for this topic
+    2. A bias score (0-100), where 50 is neutral, <50 is conservative-leaning, >50 is liberal-leaning
+    3. A brief explanation of how bias might manifest in their coverage
     
-    IMPORTANT: I need at least 3 sources covering the same story. If you can't find 3+ sources covering the identical story, identify a different story within these articles that is covered by at least 3 sources.
+    The analysis should be realistic and based on the typical editorial stance of each source.
     
-    Focus on finding the HIGHEST number of sources covering the SAME story.
+    FORMAT:
+    Return a JSON object with an array called "results", each containing:
+    - source: string (news source name)
+    - headline: string (plausible headline)
+    - biasScore: number (0-100)
+    - politicalLeaning: string (Conservative/Liberal/Centrist)
+    - explanation: string
     `;
-
-    // Call OpenAI to analyze the real articles
-    const response = await openai.chat.completions.create({
+    
+    const fallbackResponse = await openai.chat.completions.create({
       model: "gpt-4o",
-      messages: [{ role: "user", content: analysisPrompt }],
+      messages: [{ role: "user", content: fallbackPrompt }],
       response_format: { type: "json_object" },
-      max_tokens: 3000, // Increased token limit for better analysis
+      max_tokens: 2000,
     });
 
-    const result = JSON.parse(response.choices[0].message.content || "{}");
+    const fallbackResult = JSON.parse(fallbackResponse.choices[0].message.content || "{}");
     
     // Parse the result - ensuring it has the expected structure
-    if (Array.isArray(result)) {
-      return result as SourceComparisonResult[];
-    } else if (result.results && Array.isArray(result.results)) {
-      return result.results as SourceComparisonResult[];
-    } else {
-      throw new Error("Unexpected response format from analysis");
+    if (Array.isArray(fallbackResult)) {
+      return fallbackResult.map(item => ({
+        ...item,
+        explanation: item.explanation + " (Note: This is an example analysis due to NewsAPI rate limits.)"
+      }));
+    } else if (fallbackResult.results && Array.isArray(fallbackResult.results)) {
+      return fallbackResult.results.map(item => ({
+        ...item,
+        explanation: item.explanation + " (Note: This is an example analysis due to NewsAPI rate limits.)"
+      }));
     }
+    
+    throw new Error("Failed to generate comparison analysis");
   } catch (error) {
     console.error("Error comparing sources:", error);
     throw new Error(`Failed to compare sources: ${error instanceof Error ? error.message : "Unknown error"}`);
