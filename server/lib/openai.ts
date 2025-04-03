@@ -287,14 +287,13 @@ export async function compareSources(request: SourceComparisonRequest): Promise<
     
     // Prepare content for OpenAI analysis
     const analysisPrompt = `
-    Analyze the coverage of the topic "${topic}" from different major news sources.
+    Find articles about the EXACT SAME news event or story across different sources, and compare only their bias scores.
     
-    I'll provide actual headlines and excerpts from each source. For each source, perform a detailed analysis:
-    1. The bias score (0-100, where 0 is completely neutral and 100 is extremely biased)
-    2. Key narrative approach they're taking - how they're framing the story
-    3. Their political leaning (Conservative, Liberal, or Centrist)
-    4. Identify specific language, framing, and content choices that demonstrate their bias or approach
-    5. Any particular aspects of the story they emphasize or downplay
+    I'll provide headlines and excerpts from various news sources on the topic "${topic}". Your task is to:
+    
+    1. Identify which sources are covering the EXACT SAME specific news event or story
+    2. For those sources covering the same story, determine the bias score (0-100, where 0 is completely neutral and 100 is extremely biased)
+    3. Provide just a one-sentence explanation of their political leaning and how it influenced their coverage
     
     Here are the articles from each source:
     ${Object.entries(sourceArticles).map(([source, articles]) => {
@@ -315,22 +314,17 @@ export async function compareSources(request: SourceComparisonRequest): Promise<
       `;
     }).join('\n\n')}
     
-    Format your response as a JSON object with a "results" array containing objects with these properties for each source:
+    Format your response as a JSON object with a "results" array containing objects with these properties for each source that covers the EXACT SAME story:
     - source: string (news source name)
     - headline: string (the actual headline)
     - biasScore: number (bias rating from 0-100)
-    - keyNarrative: string (brief description of narrative approach)
-    - contentAnalysis: string[] (array of quoted phrases/sentences that show the bias or approach with brief explanations)
-    - politicalLeaning: string (one of "Conservative", "Liberal", or "Centrist")
-    - emotionalTone: number (0-100, where 0 is completely neutral and 100 is highly emotional)
-    - factualFocus: number (0-100, where 0 is opinion-heavy and 100 is completely fact-focused)
-    - framingScore: number (0-100, where lower numbers indicate a more negative framing and higher numbers indicate a more positive framing)
+    - politicalLeaning: string (one of "Conservative", "Liberal", "Moderate Conservative", "Moderate Liberal", or "Centrist")
+    - explanation: string (a brief one-sentence explanation of the bias)
     
-    Only include sources in the results array that have articles available. Skip sources with no articles found.
-    Use highlighting with <span> tags to mark important phrases in the contentAnalysis field:
-    - <span class="bg-blue-100">text</span> for conservative framing
-    - <span class="bg-red-100">text</span> for liberal framing
-    - <span class="bg-green-100">text</span> for neutral framing
+    Ensure you only include sources in the results array that are covering the EXACT SAME news event or story.
+    If different sources are covering different news events, create separate arrays for each event.
+    
+    Important: Your response should focus ONLY on comparing the bias in coverage of the EXACT SAME news story across different sources. Do not include analysis of different stories or articles that do not cover the same event.
     `;
 
     // Call OpenAI to analyze the real articles

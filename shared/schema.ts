@@ -78,10 +78,6 @@ export type SourceComparisonResult = {
   source: string;
   headline: string;
   biasScore: number;
-  keyNarrative: string;
-  contentAnalysis: string[];
   politicalLeaning: string;
-  emotionalTone?: number;
-  factualFocus?: number;
-  framingScore?: number;
+  explanation: string;
 };
