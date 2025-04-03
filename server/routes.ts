@@ -95,9 +95,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const request: SourceComparisonRequest = req.body;
       
-      if (!request.topic || !request.sources || request.sources.length === 0) {
-        return res.status(400).json({ message: "Topic and at least one source must be provided" });
+      if (!request.topic) {
+        return res.status(400).json({ message: "Topic must be provided" });
       }
+      
+      // Sources are now automatically determined in the compareSources function
+      // so we don't need to validate them here
 
       const results = await compareSources(request);
       res.json(results);

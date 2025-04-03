@@ -44,30 +44,30 @@ function ArticleDetailDialog({ articleId }: { articleId: number }) {
   
   if (isLoading || !article) {
     return (
-      <DialogContent className="max-w-4xl bg-gray-900 border-gray-800 text-white">
+      <DialogContent className="max-w-4xl bg-slate-900 border-slate-800 text-white">
         <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
         </div>
       </DialogContent>
     );
   }
   
   return (
-    <DialogContent className="max-w-4xl bg-gray-900 border-gray-800 text-white">
+    <DialogContent className="max-w-4xl bg-slate-900 border-slate-800 text-white">
       <DialogHeader>
-        <DialogTitle className="text-xl font-semibold text-white">
+        <DialogTitle className="text-xl font-semibold bg-gradient-to-r from-violet-400 to-blue-400 bg-clip-text text-transparent">
           {article.title}
         </DialogTitle>
-        <DialogDescription className="text-gray-400">
+        <DialogDescription className="text-slate-400">
           {article.source} • {new Date(article.analyzedAt).toLocaleDateString()}
         </DialogDescription>
       </DialogHeader>
       
       <Tabs defaultValue="analysis" value={activeTab} onValueChange={setActiveTab} className="mt-4">
-        <TabsList className="bg-gray-800 border-gray-700">
-          <TabsTrigger value="analysis" className="data-[state=active]:bg-blue-600">Analysis</TabsTrigger>
-          <TabsTrigger value="side-by-side" className="data-[state=active]:bg-blue-600">Side by Side</TabsTrigger>
-          <TabsTrigger value="metrics" className="data-[state=active]:bg-blue-600">Bias Metrics</TabsTrigger>
+        <TabsList className="bg-slate-800 border-slate-700 grid grid-cols-3">
+          <TabsTrigger value="analysis" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-600 data-[state=active]:to-violet-600 data-[state=active]:text-white">Analysis</TabsTrigger>
+          <TabsTrigger value="side-by-side" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-600 data-[state=active]:to-violet-600 data-[state=active]:text-white">Side by Side</TabsTrigger>
+          <TabsTrigger value="metrics" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-600 data-[state=active]:to-violet-600 data-[state=active]:text-white">Bias Metrics</TabsTrigger>
         </TabsList>
         
         <TabsContent value="analysis" className="mt-4">
@@ -302,38 +302,40 @@ export default function HistoryTab() {
                 <tbody className="divide-y divide-gray-800 bg-black">
                   {filteredItems.length > 0 ? (
                     filteredItems.map((item, index) => (
-                      <tr key={item.id} className={index % 2 === 0 ? 'bg-black' : 'bg-gray-900/30'}>
-                        <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-300 sm:pl-6">
-                          {item.title}
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-400">{item.source || 'Unknown'}</td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-400">
-                          {new Date(item.analyzedAt).toLocaleDateString()}
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm">
-                          <div className="w-24">
-                            <BiasScale score={item.biasScore} mini maxScore={100} />
-                          </div>
-                          <span className={`text-xs ${getBiasLabelColor(item.biasScore)}`}>
-                            {getBiasLabel(item.biasScore)}
-                          </span>
-                        </td>
-                        <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                          <Dialog open={selectedArticleId === item.id} onOpenChange={(open) => !open && setSelectedArticleId(null)}>
-                            <DialogTrigger asChild>
-                              <button 
-                                className="text-blue-400 hover:text-blue-300 transition-colors"
-                                onClick={() => setSelectedArticleId(item.id)}
-                              >
-                                View details
-                              </button>
-                            </DialogTrigger>
-                            {selectedArticleId === item.id && (
-                              <ArticleDetailDialog articleId={item.id} />
-                            )}
-                          </Dialog>
-                        </td>
-                      </tr>
+                      <Dialog key={item.id} open={selectedArticleId === item.id} onOpenChange={(open) => !open && setSelectedArticleId(null)}>
+                        <DialogTrigger asChild>
+                          <tr 
+                            className={`${index % 2 === 0 ? 'bg-black' : 'bg-slate-900/30'} cursor-pointer hover:bg-slate-800/50 transition-colors`}
+                            onClick={() => setSelectedArticleId(item.id)}
+                          >
+                            <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-slate-300 sm:pl-6">
+                              {item.title}
+                            </td>
+                            <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-400">{item.source || 'Unknown'}</td>
+                            <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-400">
+                              {new Date(item.analyzedAt).toLocaleDateString()}
+                            </td>
+                            <td className="whitespace-nowrap px-3 py-4 text-sm">
+                              <div className="w-24">
+                                <BiasScale score={item.biasScore} mini maxScore={100} />
+                              </div>
+                              <span className={`text-xs ${getBiasLabelColor(item.biasScore)}`}>
+                                {getBiasLabel(item.biasScore)}
+                              </span>
+                            </td>
+                            <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                              <span className="text-indigo-400 flex items-center justify-end">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M18 15l-6-6-6 6"/>
+                                </svg>
+                              </span>
+                            </td>
+                          </tr>
+                        </DialogTrigger>
+                        {selectedArticleId === item.id && (
+                          <ArticleDetailDialog articleId={item.id} />
+                        )}
+                      </Dialog>
                     ))
                   ) : (
                     <tr>

@@ -80,5 +80,8 @@ export type SourceComparisonResult = {
   biasScore: number;
   keyNarrative: string;
   contentAnalysis: string[];
-  politicalLeaning?: string;
+  politicalLeaning: string;
+  emotionalTone?: number;
+  factualFocus?: number;
+  framingScore?: number;
 };

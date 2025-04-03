@@ -19,10 +19,7 @@ export default function AnalysisTab() {
   const { toast } = useToast();
   const { analyzeArticle } = useAnalysis();
 
-  const { data: recentArticles } = useQuery<Article[]>({
-    queryKey: ["/api/articles/recent"],
-    staleTime: 60000,
-  });
+  // Removed recent articles query as per requirement
 
   const handleClear = () => {
     setUrl("");
@@ -412,39 +409,6 @@ export default function AnalysisTab() {
 
       {/* Side Panel */}
       <div className="space-y-6">
-        {/* Recently Analyzed */}
-        <Card className="bg-gray-900 border-gray-800">
-          <CardContent className="p-6">
-            <h2 className="text-xl font-semibold mb-4 text-white">Recently Analyzed</h2>
-            <div className="space-y-4">
-              {recentArticles && recentArticles.length > 0 ? (
-                recentArticles.map((article: Article) => (
-                  <div key={article.id} className="border-b border-gray-700 pb-4 last:border-b-0 last:pb-0">
-                    <h3 className="text-sm font-medium text-gray-200 hover:text-blue-400 cursor-pointer">
-                      {article.title}
-                    </h3>
-                    <div className="flex items-center mt-2 text-xs text-gray-400">
-                      <span>{article.source}</span>
-                      <span className="mx-2">•</span>
-                      <span>{new Date(article.analyzedAt).toLocaleDateString()}</span>
-                    </div>
-                    <div className="mt-2 relative">
-                      <BiasScale score={article.biasScore} mini maxScore={100} />
-                    </div>
-                    <div className="text-xs text-right mt-1">
-                      <span className={getBiasLabelColor(article.biasScore)}>
-                        {getBiasLabel(article.biasScore)}
-                      </span>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-gray-400">No articles analyzed yet</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Usage Tips */}
         <Card className="bg-gray-900 border-gray-800">
           <CardContent className="p-6">

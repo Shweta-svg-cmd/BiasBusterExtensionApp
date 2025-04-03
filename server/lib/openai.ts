@@ -254,10 +254,27 @@ import { fetchArticlesFromSources } from "./newsapi";
 
 export async function compareSources(request: SourceComparisonRequest): Promise<SourceComparisonResult[]> {
   try {
-    const { topic, sources } = request;
+    const { topic } = request;
+    
+    // Standard sources to compare across - regardless of what was requested
+    const standardSources = [
+      "New York Times", 
+      "Wall Street Journal", 
+      "Fox News", 
+      "CNN", 
+      "BBC", 
+      "Washington Post", 
+      "NPR"
+    ];
+    
+    // Ensure we're always fetching from standard sources
+    const enrichedRequest = {
+      topic,
+      sources: standardSources
+    };
     
     // Fetch real articles from NewsAPI
-    const sourceArticles = await fetchArticlesFromSources(request);
+    const sourceArticles = await fetchArticlesFromSources(enrichedRequest);
     
     // Check if we have any articles to analyze
     const totalArticles = Object.values(sourceArticles).reduce(
@@ -265,18 +282,19 @@ export async function compareSources(request: SourceComparisonRequest): Promise<
     );
     
     if (totalArticles === 0) {
-      throw new Error(`No articles found for topic "${topic}" from the specified sources. Please try a different topic or sources.`);
+      throw new Error(`No articles found for topic "${topic}" across major news sources. Please try a different topic.`);
     }
     
     // Prepare content for OpenAI analysis
     const analysisPrompt = `
-    Analyze the coverage of the topic "${topic}" from different news sources.
+    Analyze the coverage of the topic "${topic}" from different major news sources.
     
-    I'll provide actual headlines and excerpts from each source. For each source, analyze:
+    I'll provide actual headlines and excerpts from each source. For each source, perform a detailed analysis:
     1. The bias score (0-100, where 0 is completely neutral and 100 is extremely biased)
-    2. The key narrative approach they're taking
+    2. Key narrative approach they're taking - how they're framing the story
     3. Their political leaning (Conservative, Liberal, or Centrist)
-    4. Identify key content that demonstrates their approach or bias
+    4. Identify specific language, framing, and content choices that demonstrate their bias or approach
+    5. Any particular aspects of the story they emphasize or downplay
     
     Here are the articles from each source:
     ${Object.entries(sourceArticles).map(([source, articles]) => {
@@ -302,10 +320,17 @@ export async function compareSources(request: SourceComparisonRequest): Promise<
     - headline: string (the actual headline)
     - biasScore: number (bias rating from 0-100)
     - keyNarrative: string (brief description of narrative approach)
-    - contentAnalysis: string[] (array of key phrases/sentences that show the bias or approach)
+    - contentAnalysis: string[] (array of quoted phrases/sentences that show the bias or approach with brief explanations)
     - politicalLeaning: string (one of "Conservative", "Liberal", or "Centrist")
+    - emotionalTone: number (0-100, where 0 is completely neutral and 100 is highly emotional)
+    - factualFocus: number (0-100, where 0 is opinion-heavy and 100 is completely fact-focused)
+    - framingScore: number (0-100, where lower numbers indicate a more negative framing and higher numbers indicate a more positive framing)
     
     Only include sources in the results array that have articles available. Skip sources with no articles found.
+    Use highlighting with <span> tags to mark important phrases in the contentAnalysis field:
+    - <span class="bg-blue-100">text</span> for conservative framing
+    - <span class="bg-red-100">text</span> for liberal framing
+    - <span class="bg-green-100">text</span> for neutral framing
     `;
 
     // Call OpenAI to analyze the real articles
