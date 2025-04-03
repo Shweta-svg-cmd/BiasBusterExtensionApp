@@ -58,32 +58,32 @@ export default function HistoryTab() {
   };
 
   return (
-    <Card>
+    <Card className="bg-gray-900 border-gray-800">
       <CardContent className="p-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 sm:gap-0">
-          <h2 className="text-xl font-semibold">Your Analysis History</h2>
+          <h2 className="text-xl font-semibold text-white">Your Analysis History</h2>
           <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
             <div className="relative">
               <Input
                 type="text"
                 placeholder="Search history..."
-                className="pl-8 pr-3 py-1.5 text-sm"
+                className="pl-8 pr-3 py-1.5 text-sm bg-gray-800 border-gray-700 text-gray-200 placeholder:text-gray-400 focus:border-blue-600 focus:ring-blue-600"
                 value={searchTerm}
                 onChange={handleHistorySearch}
               />
-              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-neutral-medium">🔍</span>
+              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
             </div>
             <Select value={sourceFilter} onValueChange={handleHistoryFilter}>
-              <SelectTrigger className="text-sm py-1.5 px-3 w-full sm:w-40">
+              <SelectTrigger className="text-sm py-1.5 px-3 w-full sm:w-40 bg-gray-800 border-gray-700 text-gray-200">
                 <SelectValue placeholder="All Sources" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Sources</SelectItem>
-                <SelectItem value="nyt">New York Times</SelectItem>
-                <SelectItem value="wsj">Wall Street Journal</SelectItem>
-                <SelectItem value="fox">Fox News</SelectItem>
-                <SelectItem value="cnn">CNN</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
+              <SelectContent className="bg-gray-800 border-gray-700">
+                <SelectItem value="all" className="text-gray-200 focus:bg-blue-900">All Sources</SelectItem>
+                <SelectItem value="nyt" className="text-gray-200 focus:bg-blue-900">New York Times</SelectItem>
+                <SelectItem value="wsj" className="text-gray-200 focus:bg-blue-900">Wall Street Journal</SelectItem>
+                <SelectItem value="fox" className="text-gray-200 focus:bg-blue-900">Fox News</SelectItem>
+                <SelectItem value="cnn" className="text-gray-200 focus:bg-blue-900">CNN</SelectItem>
+                <SelectItem value="other" className="text-gray-200 focus:bg-blue-900">Other</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -91,13 +91,13 @@ export default function HistoryTab() {
         
         {isLoading ? (
           <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
           </div>
         ) : (
           <>
-            <div className="overflow-hidden shadow ring-1 ring-slate-700 rounded-lg">
-              <table className="min-w-full divide-y divide-slate-700">
-                <thead className="bg-slate-800">
+            <div className="overflow-hidden shadow rounded-lg">
+              <table className="min-w-full divide-y divide-gray-700">
+                <thead className="bg-black">
                   <tr>
                     <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider sm:pl-6">Article Title</th>
                     <th scope="col" className="px-3 py-3.5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Source</th>
@@ -108,10 +108,10 @@ export default function HistoryTab() {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-700 bg-slate-900">
+                <tbody className="divide-y divide-gray-800 bg-black">
                   {filteredItems.length > 0 ? (
                     filteredItems.map((item, index) => (
-                      <tr key={item.id} className={index % 2 === 0 ? 'bg-slate-900' : 'bg-slate-800/50'}>
+                      <tr key={item.id} className={index % 2 === 0 ? 'bg-black' : 'bg-gray-900/30'}>
                         <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-300 sm:pl-6">
                           {item.title}
                         </td>
@@ -128,7 +128,7 @@ export default function HistoryTab() {
                           </span>
                         </td>
                         <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                          <button className="text-primary hover:text-blue-400 transition-colors">
+                          <button className="text-blue-400 hover:text-blue-300 transition-colors">
                             View details
                           </button>
                         </td>
@@ -146,12 +146,12 @@ export default function HistoryTab() {
             </div>
             
             <div className="flex items-center justify-between mt-6">
-              <div className="text-sm text-neutral-medium">
+              <div className="text-sm text-gray-400">
                 {totalCount ? (
                   <>
-                    Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to{" "}
-                    <span className="font-medium">{Math.min(currentPage * itemsPerPage, totalCount)}</span> of{" "}
-                    <span className="font-medium">{totalCount}</span> results
+                    Showing <span className="font-medium text-gray-300">{(currentPage - 1) * itemsPerPage + 1}</span> to{" "}
+                    <span className="font-medium text-gray-300">{Math.min(currentPage * itemsPerPage, totalCount)}</span> of{" "}
+                    <span className="font-medium text-gray-300">{totalCount}</span> results
                   </>
                 ) : (
                   "No results"
@@ -161,6 +161,7 @@ export default function HistoryTab() {
                 <Button 
                   variant="outline" 
                   size="sm"
+                  className="border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white"
                   disabled={currentPage === 1} 
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 >
@@ -169,6 +170,7 @@ export default function HistoryTab() {
                 <Button 
                   variant="outline" 
                   size="sm"
+                  className="border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white"
                   disabled={currentPage === totalPages || totalPages === 0} 
                   onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 >

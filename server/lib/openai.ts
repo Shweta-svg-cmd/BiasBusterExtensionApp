@@ -152,7 +152,7 @@ export async function analyzeArticle(request: ArticleAnalysisRequest): Promise<{
     - emotionalLanguage: One of "Low", "Moderate", or "High"
     - factualReporting: One of "Low", "Moderate", or "High"
     - biasAnalysis: A 2-3 paragraph explanation of the bias you detected and why
-    - neutralText: A rewrite of a portion of the article in completely neutral language
+    - neutralText: A complete rewrite of the ENTIRE article in neutral, objective language. Maintain all factual information but remove any bias, loaded language, or partisan framing.
     - biasedPhrases: An array of objects with "text" (the biased phrase) and "explanation" (why it's biased)
     - topics: An object with "main" (the primary topic) and "related" (an array of related topics like "Politics", "Economy", "Crime", etc.)
     - multidimensionalAnalysis: An object with numeric scores from 0-100 for these dimensions:
@@ -163,6 +163,8 @@ export async function analyzeArticle(request: ArticleAnalysisRequest): Promise<{
         * neutralLanguage: Use of neutral language (0=heavily loaded language, 100=completely neutral)
     
     Focus on identifying loaded language, emotional appeals, opinion presented as fact, selective facts, framing, and labeling. Look at the overall tone and presentation, not just individual words.
+    
+    It is CRITICAL that the neutralText field contains a COMPLETE rewrite of the entire article, not just a portion of it.
     `;
 
     const response = await openai.chat.completions.create({

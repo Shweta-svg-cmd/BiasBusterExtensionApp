@@ -221,47 +221,74 @@ export default function AnalysisTab() {
               {/* Multidimensional Analysis */}
               {latestAnalysis.multidimensionalAnalysis && (
                 <div className="mb-6">
-                  <h4 className="text-sm font-medium text-neutral-medium mb-2">Multidimensional Bias Analysis</h4>
-                  <div className="bg-slate-900 p-4 rounded-lg">
+                  <div className="flex items-center mb-2">
+                    <div className="w-6 h-6 mr-2 text-blue-400 flex items-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 3v18h18"></path>
+                        <path d="M18 17V9"></path>
+                        <path d="M13 17V5"></path>
+                        <path d="M8 17v-3"></path>
+                      </svg>
+                    </div>
+                    <h4 className="text-lg font-medium text-white">Multidimensional Bias Analysis</h4>
+                  </div>
+                  <div className="bg-black p-4 rounded-lg">
                     <div className="h-64 w-full relative flex items-center justify-center">
-                      {/* Spider chart visualization (simplified static version) */}
-                      <div className="relative w-full h-full">
-                        {/* Background grid */}
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="h-[80%] w-[80%] border border-gray-700 opacity-50 rotate-45"></div>
-                          <div className="h-[60%] w-[60%] border border-gray-700 opacity-50 absolute rotate-45"></div>
-                          <div className="h-[40%] w-[40%] border border-gray-700 opacity-50 absolute rotate-45"></div>
-                          <div className="h-[20%] w-[20%] border border-gray-700 opacity-50 absolute rotate-45"></div>
-                        </div>
-                        
-                        {/* Polygon shape for the values (using CSS clip-path) */}
-                        <div 
-                          className="absolute inset-0 flex items-center justify-center" 
-                          style={{
-                            clipPath: latestAnalysis.multidimensionalAnalysis 
-                              ? `polygon(
-                                  50% ${100 - latestAnalysis.multidimensionalAnalysis.bias * 0.8}%, 
-                                  ${50 + latestAnalysis.multidimensionalAnalysis.emotional * 0.4}% ${50 + latestAnalysis.multidimensionalAnalysis.emotional * 0.4}%, 
-                                  ${100 - latestAnalysis.multidimensionalAnalysis.factual * 0.8}% 50%, 
-                                  ${50 - latestAnalysis.multidimensionalAnalysis.political * 0.4}% ${50 + latestAnalysis.multidimensionalAnalysis.political * 0.4}%, 
-                                  50% ${latestAnalysis.multidimensionalAnalysis.neutralLanguage * 0.8}%
-                                )`
-                              : ''
-                          }}
-                        >
-                          <div className="h-full w-full bg-gradient-to-br from-emerald-500/30 to-emerald-500/60 rotate-45">
-                          </div>
-                        </div>
-                        
-                        {/* Axes Labels */}
-                        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 text-xs text-gray-400">Bias</div>
-                        <div className="absolute right-0 top-1/2 translate-y-1/2 translate-x-2 text-xs text-gray-400">Emotional</div>
-                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-2 text-xs text-gray-400">Neutral Language</div>
-                        <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 text-xs text-gray-400">Political</div>
-                        <div className="absolute top-1/2 right-1/4 text-xs text-gray-400">Factual</div>
+                      {/* Pentagon shape with 5 points */}
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        {/* Background pentagon grid layers */}
+                        <div className="pentagon-grid h-full w-full opacity-20 border border-gray-600"></div>
+                        <div className="pentagon-grid h-[80%] w-[80%] opacity-30 border border-gray-600 absolute"></div>
+                        <div className="pentagon-grid h-[60%] w-[60%] opacity-40 border border-gray-600 absolute"></div>
+                        <div className="pentagon-grid h-[40%] w-[40%] opacity-50 border border-gray-600 absolute"></div>
+                        <div className="pentagon-grid h-[20%] w-[20%] opacity-60 border border-gray-600 absolute"></div>
                       </div>
+                      
+                      {/* Data polygon (green shape) */}
+                      <div className="data-polygon absolute h-full w-full" style={{
+                        clipPath: `polygon(
+                          50% ${25}%, 
+                          ${85}% ${35}%, 
+                          ${75}% ${75}%, 
+                          ${25}% ${75}%, 
+                          ${15}% ${35}%
+                        )`
+                      }}>
+                        <div className="h-full w-full bg-teal-600/40"></div>
+                      </div>
+                      
+                      {/* Axes Labels */}
+                      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 text-xs text-gray-400">Bias</div>
+                      <div className="absolute right-[15%] top-[35%] text-xs text-gray-400">Emotional</div>
+                      <div className="absolute right-[25%] bottom-[25%] text-xs text-gray-400">Factual</div>
+                      <div className="absolute left-[25%] bottom-[25%] text-xs text-gray-400">Political</div>
+                      <div className="absolute left-[15%] top-[35%] text-xs text-gray-400">Neutral Language</div>
+                      
+                      {/* Values at key points (optional) */}
+                      <div className="absolute top-[5%] left-1/2 -translate-x-1/2 text-xs text-white">75%</div>
+                      <div className="absolute right-[8%] top-[35%] text-xs text-white">65%</div>
+                      <div className="absolute right-[25%] bottom-[15%] text-xs text-white">50%</div>
+                      <div className="absolute left-[25%] bottom-[15%] text-xs text-white">70%</div>
+                      <div className="absolute left-[8%] top-[35%] text-xs text-white">80%</div>
                     </div>
                   </div>
+                  
+                  <style dangerouslySetInnerHTML={{
+                    __html: `
+                    .pentagon-grid {
+                      clip-path: polygon(
+                        50% 0%, 
+                        100% 38%, 
+                        82% 100%, 
+                        18% 100%, 
+                        0% 38%
+                      );
+                    }
+                    
+                    .data-polygon {
+                      background: linear-gradient(135deg, rgba(0, 128, 128, 0.3), rgba(0, 255, 171, 0.6));
+                    }
+                  `}} />
                 </div>
               )}
 
