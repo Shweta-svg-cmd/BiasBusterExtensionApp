@@ -44,20 +44,71 @@ export async function fetchNewsArticles(topic: string, source: string): Promise<
   const sourceId = NEWS_SOURCES[source as keyof typeof NEWS_SOURCES] || source;
   
   const encodedTopic = encodeURIComponent(topic);
-  const apiUrl = `https://newsapi.org/v2/everything?q=${encodedTopic}&sources=${sourceId}&sortBy=relevancy&pageSize=5&apiKey=${NEWSAPI_KEY}`;
+  
+  // First try with sources parameter
+  let apiUrl = `https://newsapi.org/v2/everything?q=${encodedTopic}&sources=${sourceId}&sortBy=relevancy&pageSize=5&apiKey=${NEWSAPI_KEY}`;
   
   try {
     const response = await fetch(apiUrl);
     
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`NewsAPI error (${response.status}): ${errorText}`);
+      console.warn(`NewsAPI error with sources parameter (${response.status}): ${errorText}`);
+      
+      // If the sources parameter fails, try with domains parameter as fallback
+      if (response.status === 400) {
+        // Create a domain from the source name (simplified approach)
+        const domain = sourceId
+          .replace(/^the-/, '')  // Remove leading "the-"
+          .replace(/-/g, '.');   // Convert hyphens to dots
+        
+        apiUrl = `https://newsapi.org/v2/everything?q=${encodedTopic}&domains=${domain}.com&sortBy=relevancy&pageSize=5&apiKey=${NEWSAPI_KEY}`;
+        
+        const fallbackResponse = await fetch(apiUrl);
+        if (!fallbackResponse.ok) {
+          const fallbackErrorText = await fallbackResponse.text();
+          throw new Error(`NewsAPI fallback error (${fallbackResponse.status}): ${fallbackErrorText}`);
+        }
+        
+        const fallbackData = await fallbackResponse.json() as NewsAPIResponse;
+        if (fallbackData.status !== "ok") {
+          throw new Error(`NewsAPI returned non-ok status: ${fallbackData.status}`);
+        }
+        
+        return fallbackData.articles;
+      } else {
+        throw new Error(`NewsAPI error (${response.status}): ${errorText}`);
+      }
     }
     
     const data = await response.json() as NewsAPIResponse;
     
     if (data.status !== "ok") {
       throw new Error(`NewsAPI returned non-ok status: ${data.status}`);
+    }
+    
+    // If we got empty results, try an alternative approach
+    if (data.articles.length === 0) {
+      // Try with a more general search including the source name
+      const encodedSource = encodeURIComponent(source.toLowerCase());
+      apiUrl = `https://newsapi.org/v2/everything?q=${encodedTopic}+${encodedSource}&sortBy=relevancy&pageSize=5&apiKey=${NEWSAPI_KEY}`;
+      
+      const alternativeResponse = await fetch(apiUrl);
+      if (!alternativeResponse.ok) {
+        return []; // Return original empty result if alternative also fails
+      }
+      
+      const alternativeData = await alternativeResponse.json() as NewsAPIResponse;
+      if (alternativeData.status !== "ok" || alternativeData.articles.length === 0) {
+        return data.articles; // Return original results if alternative fails or is also empty
+      }
+      
+      // Filter to try to get only articles from the desired source
+      const filtered = alternativeData.articles.filter(article => 
+        article.source.name.toLowerCase().includes(source.toLowerCase())
+      );
+      
+      return filtered.length > 0 ? filtered : alternativeData.articles.slice(0, 2);
     }
     
     return data.articles;

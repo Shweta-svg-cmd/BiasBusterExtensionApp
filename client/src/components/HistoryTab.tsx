@@ -6,11 +6,202 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import BiasScale from "@/components/ui/bias-scale";
 import { useQuery } from "@tanstack/react-query";
 import { Article } from "@shared/schema";
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BiasRadarChart, BiasRadarData } from "@/components/ui/radar-chart";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
+// Article detail dialog component
+function ArticleDetailDialog({ articleId }: { articleId: number }) {
+  const [activeTab, setActiveTab] = useState("analysis");
+  
+  const { data: article, isLoading } = useQuery<Article>({
+    queryKey: [`/api/articles/${articleId}`],
+    enabled: !!articleId,
+  });
+  
+  // Convert multidimensional analysis to radar chart format
+  const getRadarData = (): BiasRadarData[] => {
+    if (!article?.multidimensionalAnalysis) return [];
+    
+    const { bias, emotional, factual, political, neutralLanguage } = article.multidimensionalAnalysis;
+    
+    return [
+      { name: "Bias", value: bias, fullMark: 100 },
+      { name: "Emotional", value: emotional, fullMark: 100 },
+      { name: "Factual", value: factual, fullMark: 100 },
+      { name: "Political", value: political, fullMark: 100 },
+      { name: "Neutral Language", value: neutralLanguage, fullMark: 100 },
+    ];
+  };
+  
+  if (isLoading || !article) {
+    return (
+      <DialogContent className="max-w-4xl bg-gray-900 border-gray-800 text-white">
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      </DialogContent>
+    );
+  }
+  
+  return (
+    <DialogContent className="max-w-4xl bg-gray-900 border-gray-800 text-white">
+      <DialogHeader>
+        <DialogTitle className="text-xl font-semibold text-white">
+          {article.title}
+        </DialogTitle>
+        <DialogDescription className="text-gray-400">
+          {article.source} • {new Date(article.analyzedAt).toLocaleDateString()}
+        </DialogDescription>
+      </DialogHeader>
+      
+      <Tabs defaultValue="analysis" value={activeTab} onValueChange={setActiveTab} className="mt-4">
+        <TabsList className="bg-gray-800 border-gray-700">
+          <TabsTrigger value="analysis" className="data-[state=active]:bg-blue-600">Analysis</TabsTrigger>
+          <TabsTrigger value="side-by-side" className="data-[state=active]:bg-blue-600">Side by Side</TabsTrigger>
+          <TabsTrigger value="metrics" className="data-[state=active]:bg-blue-600">Bias Metrics</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="analysis" className="mt-4">
+          <div className="space-y-4">
+            <Card className="bg-gray-800 border-gray-700">
+              <CardContent className="pt-6">
+                <h3 className="text-lg font-semibold text-white mb-2">Bias Score: {article.biasScore}/100</h3>
+                <BiasScale score={article.biasScore} maxScore={100} />
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                  <div className="bg-gray-800 p-3 rounded-lg border border-gray-700">
+                    <h4 className="text-sm font-medium text-gray-400">Political Leaning</h4>
+                    <p className="text-white font-semibold">{article.politicalLeaning}</p>
+                  </div>
+                  <div className="bg-gray-800 p-3 rounded-lg border border-gray-700">
+                    <h4 className="text-sm font-medium text-gray-400">Emotional Language</h4>
+                    <p className="text-white font-semibold">{article.emotionalLanguage}</p>
+                  </div>
+                  <div className="bg-gray-800 p-3 rounded-lg border border-gray-700">
+                    <h4 className="text-sm font-medium text-gray-400">Factual Reporting</h4>
+                    <p className="text-white font-semibold">{article.factualReporting}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-gray-800 border-gray-700">
+              <CardContent className="pt-6">
+                <h3 className="text-lg font-semibold text-white mb-2">Bias Analysis</h3>
+                <p className="text-gray-300 whitespace-pre-line">{article.biasAnalysis}</p>
+              </CardContent>
+            </Card>
+            
+            {article.biasedPhrases && article.biasedPhrases.length > 0 && (
+              <Card className="bg-gray-800 border-gray-700">
+                <CardContent className="pt-6">
+                  <h3 className="text-lg font-semibold text-white mb-2">Biased Phrases</h3>
+                  <ul className="space-y-3">
+                    {article.biasedPhrases.map((phrase, index) => (
+                      <li key={index} className="bg-gray-900 p-3 rounded-lg">
+                        <p className="text-white font-medium mb-1">"{phrase.text}"</p>
+                        <p className="text-gray-400 text-sm">{phrase.explanation}</p>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="side-by-side" className="mt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card className="bg-gray-800 border-gray-700 h-[600px]">
+              <CardContent className="p-4">
+                <h3 className="text-lg font-semibold text-white mb-2">Original Article</h3>
+                <ScrollArea className="h-[550px] rounded-md border border-gray-700 p-4">
+                  <div className="text-gray-300 whitespace-pre-line">{article.content}</div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-gray-800 border-gray-700 h-[600px]">
+              <CardContent className="p-4">
+                <h3 className="text-lg font-semibold text-white mb-2">Neutral Version</h3>
+                <ScrollArea className="h-[550px] rounded-md border border-gray-700 p-4">
+                  <div className="text-gray-300 whitespace-pre-line">{article.neutralText}</div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="metrics" className="mt-4">
+          <Card className="bg-gray-800 border-gray-700">
+            <CardContent className="pt-6">
+              <h3 className="text-lg font-semibold text-white mb-4">Multidimensional Analysis</h3>
+              <div className="flex justify-center py-4">
+                <BiasRadarChart data={getRadarData()} className="max-w-md w-full h-80" />
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 mt-6">
+                {article.multidimensionalAnalysis && Object.entries(article.multidimensionalAnalysis).map(([key, value]) => (
+                  <div key={key} className="bg-gray-900 p-3 rounded-lg border border-gray-800">
+                    <h4 className="text-sm font-medium text-gray-400 capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</h4>
+                    <div className="flex items-center mt-1">
+                      <div className="w-full bg-gray-700 rounded-full h-2.5">
+                        <div 
+                          className="bg-blue-600 h-2.5 rounded-full" 
+                          style={{ width: `${value}%` }}
+                        />
+                      </div>
+                      <span className="text-white font-semibold ml-2">{value}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+          
+          {article.topics && (
+            <Card className="bg-gray-800 border-gray-700 mt-4">
+              <CardContent className="pt-6">
+                <h3 className="text-lg font-semibold text-white mb-2">Topics</h3>
+                <div className="flex flex-col space-y-2">
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-400">Main Topic</h4>
+                    <p className="text-white">{article.topics.main}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-400">Related Topics</h4>
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {article.topics.related.map((topic, index) => (
+                        <span key={index} className="bg-gray-900 text-gray-300 px-2 py-1 rounded-md text-sm">
+                          {topic}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
+    </DialogContent>
+  );
+}
 
 export default function HistoryTab() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sourceFilter, setSourceFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedArticleId, setSelectedArticleId] = useState<number | null>(null);
   const itemsPerPage = 10;
 
   const { data: historyItems, isLoading } = useQuery<Article[]>({
@@ -128,9 +319,19 @@ export default function HistoryTab() {
                           </span>
                         </td>
                         <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                          <button className="text-blue-400 hover:text-blue-300 transition-colors">
-                            View details
-                          </button>
+                          <Dialog open={selectedArticleId === item.id} onOpenChange={(open) => !open && setSelectedArticleId(null)}>
+                            <DialogTrigger asChild>
+                              <button 
+                                className="text-blue-400 hover:text-blue-300 transition-colors"
+                                onClick={() => setSelectedArticleId(item.id)}
+                              >
+                                View details
+                              </button>
+                            </DialogTrigger>
+                            {selectedArticleId === item.id && (
+                              <ArticleDetailDialog articleId={item.id} />
+                            )}
+                          </Dialog>
                         </td>
                       </tr>
                     ))

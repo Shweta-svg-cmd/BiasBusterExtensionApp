@@ -44,20 +44,56 @@ async function extractTextFromUrl(url: string): Promise<{
       }
     });
     
-    // Simple content extraction - in a real app, use a proper scraper or API
-    // Strip HTML tags but keep some whitespace structure
-    let content = html
+    // Improved content extraction for better readability
+    // First, try to extract the main article content
+    let mainContent = '';
+    
+    // Look for common article containers
+    const articleSelectors = [
+      /<article.*?>([\s\S]*?)<\/article>/i,
+      /<div.*?class=".*?(?:article|post|content|entry|main).*?".*?>([\s\S]*?)<\/div>/i,
+      /<div.*?id=".*?(?:article|post|content|entry|main).*?".*?>([\s\S]*?)<\/div>/i,
+      /<section.*?class=".*?(?:article|post|content|entry|main).*?".*?>([\s\S]*?)<\/section>/i
+    ];
+    
+    // Try to extract content using each selector
+    for (const selector of articleSelectors) {
+      const match = html.match(selector);
+      if (match && match[1] && match[1].length > 1000) { // Ensure we have substantial content
+        mainContent = match[1];
+        break;
+      }
+    }
+    
+    // If we couldn't extract specific article content, use the whole page but clean it
+    let content = mainContent || html;
+    
+    // Clean the content
+    content = content
       .replace(/<style([\s\S]*?)<\/style>/gi, '')
       .replace(/<script([\s\S]*?)<\/script>/gi, '')
       .replace(/<header([\s\S]*?)<\/header>/gi, '')
       .replace(/<footer([\s\S]*?)<\/footer>/gi, '')
       .replace(/<nav([\s\S]*?)<\/nav>/gi, '')
       .replace(/<aside([\s\S]*?)<\/aside>/gi, '')
+      .replace(/<form([\s\S]*?)<\/form>/gi, '')
+      .replace(/<iframe([\s\S]*?)<\/iframe>/gi, '')
+      // Convert paragraph breaks to actual line breaks for better readability
+      .replace(/<\/p>\s*<p/gi, '</p>\n<p')
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/h[1-6]>/gi, '</h>\n')
+      // Remove remaining HTML tags
       .replace(/<[^>]+>/gi, ' ')
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/&amp;/gi, '&')
+      .replace(/&lt;/gi, '<')
+      .replace(/&gt;/gi, '>')
+      .replace(/&quot;/gi, '"')
+      .replace(/&#39;/gi, "'")
       .replace(/\s+/g, ' ')
       .trim();
     
-    // Take a reasonable amount of content (this is a simplified approach)
+    // Take a reasonable amount of content, focusing on the beginning where most article text is
     content = content.substring(0, 8000);
     
     return {
@@ -176,10 +212,23 @@ export async function analyzeArticle(request: ArticleAnalysisRequest): Promise<{
 
     const result = JSON.parse(response.choices[0].message.content || "{}") as BiasAnalysisResponse;
     
+    // Format and clean the article content for better display
+    const cleanedContent = articleContent
+      .split('\n')
+      .filter(line => line.trim().length > 0)
+      .join('\n\n')
+      .replace(/\s+/g, ' ')
+      .trim();
+    
+    // Prepare a proper, readable article excerpt for storage and display
+    const contentForStorage = cleanedContent.length > 5000 
+      ? cleanedContent.substring(0, 5000) + '...' 
+      : cleanedContent;
+    
     return {
       title: result.title || title,
       source,
-      content: articleContent.substring(0, 1000), // Store a truncated version
+      content: contentForStorage, // Store a properly formatted version of the content
       biasScore: result.biasScore,
       biasAnalysis: result.biasAnalysis,
       neutralText: result.neutralText,
@@ -210,6 +259,15 @@ export async function compareSources(request: SourceComparisonRequest): Promise<
     // Fetch real articles from NewsAPI
     const sourceArticles = await fetchArticlesFromSources(request);
     
+    // Check if we have any articles to analyze
+    const totalArticles = Object.values(sourceArticles).reduce(
+      (sum, articles) => sum + articles.length, 0
+    );
+    
+    if (totalArticles === 0) {
+      throw new Error(`No articles found for topic "${topic}" from the specified sources. Please try a different topic or sources.`);
+    }
+    
     // Prepare content for OpenAI analysis
     const analysisPrompt = `
     Analyze the coverage of the topic "${topic}" from different news sources.
@@ -224,10 +282,18 @@ export async function compareSources(request: SourceComparisonRequest): Promise<
     ${Object.entries(sourceArticles).map(([source, articles]) => {
       if (!articles.length) return `${source}: No articles found`;
       
+      const article = articles[0];
+      // Get a clean description and content excerpt
+      const description = article.description || "";
+      const content = article.content || "";
+      // Combine and limit to a reasonable length for analysis
+      const excerpt = (description + " " + content).slice(0, 500);
+      
       return `
       ${source}:
-      Headline: ${articles[0].title}
-      Content: ${articles[0].description} ${articles[0].content?.slice(0, 300)}...
+      Headline: ${article.title}
+      Published: ${article.publishedAt || "Unknown date"}
+      Content: ${excerpt}...
       `;
     }).join('\n\n')}
     
@@ -238,6 +304,8 @@ export async function compareSources(request: SourceComparisonRequest): Promise<
     - keyNarrative: string (brief description of narrative approach)
     - contentAnalysis: string[] (array of key phrases/sentences that show the bias or approach)
     - politicalLeaning: string (one of "Conservative", "Liberal", or "Centrist")
+    
+    Only include sources in the results array that have articles available. Skip sources with no articles found.
     `;
 
     // Call OpenAI to analyze the real articles
@@ -245,7 +313,7 @@ export async function compareSources(request: SourceComparisonRequest): Promise<
       model: "gpt-4o",
       messages: [{ role: "user", content: analysisPrompt }],
       response_format: { type: "json_object" },
-      max_tokens: 2000,
+      max_tokens: 3000, // Increased token limit for better analysis
     });
 
     const result = JSON.parse(response.choices[0].message.content || "{}");

@@ -106,6 +106,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: error instanceof Error ? error.message : "An unexpected error occurred" });
     }
   });
+  
+  // Note: This route must come after other /api/articles/... routes to avoid capturing them
+  app.get("/api/articles/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid article ID" });
+      }
+      
+      const article = await storage.getArticle(id);
+      if (!article) {
+        return res.status(404).json({ message: "Article not found" });
+      }
+      
+      res.json(article);
+    } catch (error) {
+      console.error("Error fetching article:", error);
+      res.status(500).json({ message: error instanceof Error ? error.message : "An unexpected error occurred" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
