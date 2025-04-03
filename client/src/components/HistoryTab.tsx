@@ -15,7 +15,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BiasRadarChart, BiasRadarData } from "@/components/ui/radar-chart";
+import { BiasBarChart } from "@/components/ui/barchart";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 // Article detail dialog component
@@ -27,18 +27,18 @@ function ArticleDetailDialog({ articleId }: { articleId: number }) {
     enabled: !!articleId,
   });
   
-  // Convert multidimensional analysis to radar chart format
-  const getRadarData = (): BiasRadarData[] => {
+  // Convert multidimensional analysis to bar chart format
+  const getBarChartData = () => {
     if (!article?.multidimensionalAnalysis) return [];
     
     const { bias, emotional, factual, political, neutralLanguage } = article.multidimensionalAnalysis;
     
     return [
-      { name: "Bias", value: bias, fullMark: 100 },
-      { name: "Emotional", value: emotional, fullMark: 100 },
-      { name: "Factual", value: factual, fullMark: 100 },
-      { name: "Political", value: political, fullMark: 100 },
-      { name: "Neutral Language", value: neutralLanguage, fullMark: 100 },
+      { name: "Bias", value: bias },
+      { name: "Emotional", value: emotional },
+      { name: "Factual", value: factual },
+      { name: "Political", value: political },
+      { name: "Neutral Language", value: neutralLanguage }
     ];
   };
   
@@ -146,7 +146,11 @@ function ArticleDetailDialog({ articleId }: { articleId: number }) {
             <CardContent className="pt-6">
               <h3 className="text-lg font-semibold text-white mb-4">Multidimensional Analysis</h3>
               <div className="flex justify-center py-4">
-                <BiasRadarChart data={getRadarData()} className="max-w-md w-full h-80" />
+                <BiasBarChart 
+                  data={getBarChartData()} 
+                  className="max-w-md w-full h-80"
+                  colorScheme={["#6366f1", "#a855f7", "#ec4899"]}
+                />
               </div>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 mt-6">
