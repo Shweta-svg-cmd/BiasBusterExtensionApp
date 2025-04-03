@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BiasBarChart } from "@/components/ui/barchart";
+import { BiasSpiderChart, BiasSpiderData } from "@/components/ui/bias-spider-chart";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 // Article detail dialog component
@@ -29,6 +30,21 @@ function ArticleDetailDialog({ articleId }: { articleId: number }) {
   
   // Convert multidimensional analysis to bar chart format
   const getBarChartData = () => {
+    if (!article?.multidimensionalAnalysis) return [];
+    
+    const { bias, emotional, factual, political, neutralLanguage } = article.multidimensionalAnalysis;
+    
+    return [
+      { name: "Bias", value: bias },
+      { name: "Emotional", value: emotional },
+      { name: "Factual", value: factual },
+      { name: "Political", value: political },
+      { name: "Neutral Language", value: neutralLanguage }
+    ];
+  };
+  
+  // Convert multidimensional analysis to spider chart format
+  const getSpiderChartData = (): BiasSpiderData[] => {
     if (!article?.multidimensionalAnalysis) return [];
     
     const { bias, emotional, factual, political, neutralLanguage } = article.multidimensionalAnalysis;
@@ -144,12 +160,18 @@ function ArticleDetailDialog({ articleId }: { articleId: number }) {
         <TabsContent value="metrics" className="mt-4">
           <Card className="bg-gray-800 border-gray-700">
             <CardContent className="pt-6">
-              <h3 className="text-lg font-semibold text-white mb-4">Multidimensional Analysis</h3>
+              <div className="flex items-center mb-4">
+                <div className="h-5 w-1 bg-gradient-to-b from-teal-400 to-emerald-600 mr-2"></div>
+                <h3 className="text-lg font-semibold text-white">Multidimensional Bias Analysis</h3>
+              </div>
               <div className="flex justify-center py-4">
-                <BiasBarChart 
-                  data={getBarChartData()} 
-                  className="max-w-md w-full h-80"
-                  colorScheme={["#6366f1", "#a855f7", "#ec4899"]}
+                <BiasSpiderChart 
+                  data={getSpiderChartData()} 
+                  className="max-w-md w-full"
+                  height={300}
+                  color="#10b981" 
+                  fillOpacity={0.4}
+                  strokeWidth={2}
                 />
               </div>
               
@@ -158,9 +180,9 @@ function ArticleDetailDialog({ articleId }: { articleId: number }) {
                   <div key={key} className="bg-gray-900 p-3 rounded-lg border border-gray-800">
                     <h4 className="text-sm font-medium text-gray-400 capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</h4>
                     <div className="flex items-center mt-1">
-                      <div className="w-full bg-gray-700 rounded-full h-2.5">
+                      <div className="w-full bg-gray-700/50 rounded-full h-2.5">
                         <div 
-                          className="bg-blue-600 h-2.5 rounded-full" 
+                          className="h-2.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500" 
                           style={{ width: `${value}%` }}
                         />
                       </div>
