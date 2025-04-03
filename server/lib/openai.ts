@@ -201,37 +201,49 @@ export async function analyzeArticle(request: ArticleAnalysisRequest): Promise<{
   }
 }
 
+import { fetchArticlesFromSources } from "./newsapi";
+
 export async function compareSources(request: SourceComparisonRequest): Promise<SourceComparisonResult[]> {
   try {
     const { topic, sources } = request;
     
-    // Call OpenAI to generate comparison
-    const prompt = `
-    Generate a comparative analysis of how different news sources would cover the topic: "${topic}".
+    // Fetch real articles from NewsAPI
+    const sourceArticles = await fetchArticlesFromSources(request);
     
-    For each of these news sources: ${sources.join(', ')}, create:
-    1. A plausible headline they might use
-    2. A bias score from 0 (completely neutral/unbiased) to 100 (extremely biased)
-    3. A brief description of their key narrative approach
-    4. Three example sentences from their hypothetical coverage, highlighting biased language in <span> tags with appropriate classes:
-       - Liberal bias: <span class="bg-blue-100">liberal biased text</span>
-       - Conservative bias: <span class="bg-red-100">conservative biased text</span>
-       - Neutral factual: <span class="bg-green-100">neutral factual text</span>
+    // Prepare content for OpenAI analysis
+    const analysisPrompt = `
+    Analyze the coverage of the topic "${topic}" from different news sources.
     
-    Format the response as a JSON array of objects, each with the properties:
-    - source: string (the news source name)
-    - headline: string (the hypothetical headline)
-    - biasScore: number (the bias rating from 0-100)
+    I'll provide actual headlines and excerpts from each source. For each source, analyze:
+    1. The bias score (0-100, where 0 is completely neutral and 100 is extremely biased)
+    2. The key narrative approach they're taking
+    3. Their political leaning (Conservative, Liberal, or Centrist)
+    4. Identify key content that demonstrates their approach or bias
+    
+    Here are the articles from each source:
+    ${Object.entries(sourceArticles).map(([source, articles]) => {
+      if (!articles.length) return `${source}: No articles found`;
+      
+      return `
+      ${source}:
+      Headline: ${articles[0].title}
+      Content: ${articles[0].description} ${articles[0].content?.slice(0, 300)}...
+      `;
+    }).join('\n\n')}
+    
+    Format your response as a JSON object with a "results" array containing objects with these properties for each source:
+    - source: string (news source name)
+    - headline: string (the actual headline)
+    - biasScore: number (bias rating from 0-100)
     - keyNarrative: string (brief description of narrative approach)
-    - contentAnalysis: string[] (array of example content with spans marking bias)
+    - contentAnalysis: string[] (array of key phrases/sentences that show the bias or approach)
     - politicalLeaning: string (one of "Conservative", "Liberal", or "Centrist")
-    
-    Be nuanced and realistic in your assessment, recognizing the actual editorial tendencies of each source.
     `;
 
+    // Call OpenAI to analyze the real articles
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
-      messages: [{ role: "user", content: prompt }],
+      messages: [{ role: "user", content: analysisPrompt }],
       response_format: { type: "json_object" },
       max_tokens: 2000,
     });
@@ -247,6 +259,7 @@ export async function compareSources(request: SourceComparisonRequest): Promise<
       throw new Error("Unexpected response format from analysis");
     }
   } catch (error) {
+    console.error("Error comparing sources:", error);
     throw new Error(`Failed to compare sources: ${error instanceof Error ? error.message : "Unknown error"}`);
   }
 }

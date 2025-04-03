@@ -16,17 +16,20 @@ export default function BiasScale({ score, mini = false, maxScore = 100 }: BiasS
   const position = normalizedScore;
   
   const getBiasLabel = (score: number) => {
-    if (score < 25) return "Low Bias";
-    if (score < 50) return "Moderate Bias";
-    if (score < 75) return "High Bias";
+    if (score < 20) return "Minimal Bias";
+    if (score < 40) return "Low Bias";
+    if (score < 60) return "Moderate Bias";
+    if (score < 80) return "High Bias";
     return "Extreme Bias";
   };
   
   const getBiasMarkerColor = () => {
     // For bias score, lower is better (less biased)
-    if (normalizedScore < 25) return "bg-emerald-500"; // Low bias - green
-    if (normalizedScore < 50) return "bg-yellow-500"; // Moderate bias - yellow
-    return "bg-red-500"; // High bias - red
+    if (normalizedScore < 20) return "bg-green-500"; // Minimal bias
+    if (normalizedScore < 40) return "bg-emerald-500"; // Low bias
+    if (normalizedScore < 60) return "bg-yellow-500"; // Moderate bias
+    if (normalizedScore < 80) return "bg-orange-500"; // High bias
+    return "bg-red-500"; // Extreme bias
   };
 
   return (
@@ -39,9 +42,9 @@ export default function BiasScale({ score, mini = false, maxScore = 100 }: BiasS
           </div>
         </div>
       )}
-      <div className="h-2 rounded-full bg-gradient-to-r from-emerald-500 via-yellow-500 to-red-500">
+      <div className="h-2 rounded-full bg-gradient-to-r from-green-500 via-yellow-500 to-red-500 relative">
         <div 
-          className={`w-6 h-6 rounded-full border-2 border-white shadow-md absolute transform -translate-x-1/2 -translate-y-1/2 ${getBiasMarkerColor()}`} 
+          className={`w-6 h-6 rounded-full border-2 border-gray-900 shadow-lg absolute transform -translate-x-1/2 -translate-y-1/2 ${getBiasMarkerColor()}`} 
           style={{ 
             left: `${position}%`, 
             top: mini ? "50%" : "50%" 
