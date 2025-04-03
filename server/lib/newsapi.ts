@@ -122,14 +122,32 @@ export async function fetchNewsArticles(topic: string, source: string): Promise<
  * Fetches articles from multiple sources on the same topic
  */
 export async function fetchArticlesFromSources(request: SourceComparisonRequest): Promise<Record<string, NewsAPIArticle[]>> {
-  const { topic, sources } = request;
+  const { topic } = request;
   const result: Record<string, NewsAPIArticle[]> = {};
   
+  // Use all available sources instead of just the requested ones
+  // to maximize chances of finding the same story across multiple sources
+  const allSourceNames = Object.keys(NEWS_SOURCES);
+  
+  // Add additional sources
+  const additionalSources = [
+    "ABC News", "CBS News", "Reuters", "Politico", "USA Today", "The Hill", "MSNBC"
+  ];
+  
+  const expandedSources = [...allSourceNames, ...additionalSources];
+  
+  console.log(`Attempting to find "${topic}" across ${expandedSources.length} news sources`);
+  
   // Use Promise.allSettled to fetch from all sources even if some fail
-  const promises = sources.map(async (source) => {
+  const promises = expandedSources.map(async (source) => {
     try {
       const articles = await fetchNewsArticles(topic, source);
-      result[source] = articles;
+      if (articles.length > 0) {
+        console.log(`Found ${articles.length} articles from ${source} about "${topic}"`);
+        result[source] = articles;
+      } else {
+        result[source] = []; // Empty array for sources with no articles
+      }
     } catch (error) {
       console.error(`Error fetching from ${source}:`, error);
       result[source] = []; // Empty array for failed sources
@@ -137,5 +155,13 @@ export async function fetchArticlesFromSources(request: SourceComparisonRequest)
   });
   
   await Promise.allSettled(promises);
+  
+  // Log successful sources
+  const successfulSources = Object.entries(result)
+    .filter(([_, articles]) => articles.length > 0)
+    .map(([source, _]) => source);
+  
+  console.log(`Found articles about "${topic}" from these sources: ${successfulSources.join(", ")}`);
+  
   return result;
 }

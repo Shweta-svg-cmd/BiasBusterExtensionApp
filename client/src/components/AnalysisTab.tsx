@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useAnalysis } from "@/hooks/useAnalysis";
 import BiasScale from "@/components/ui/bias-scale";
-import { BiasRadarChart, BiasRadarData } from "@/components/ui/radar-chart";
+import { BiasBarChart } from "@/components/ui/barchart";
 import { Article } from "@shared/schema";
 import { useQuery } from "@tanstack/react-query";
 
@@ -69,19 +69,23 @@ export default function AnalysisTab() {
   });
 
   const getBiasLabel = (score: number) => {
-    if (score < 20) return "Minimal Bias";
-    if (score < 40) return "Low Bias";
-    if (score < 60) return "Moderate Bias";
-    if (score < 80) return "High Bias";
-    return "Extreme Bias";
+    if (score < 30) return "Very Conservative";
+    if (score < 40) return "Conservative";
+    if (score < 45) return "Leaning Conservative";
+    if (score >= 45 && score <= 55) return "Neutral/Centrist";
+    if (score < 65) return "Leaning Liberal";
+    if (score < 75) return "Liberal";
+    return "Very Liberal";
   };
 
   const getBiasLabelColor = (score: number) => {
-    if (score < 20) return "text-green-400"; 
-    if (score < 40) return "text-emerald-400";
-    if (score < 60) return "text-yellow-400";
-    if (score < 80) return "text-orange-400";
-    return "text-red-400";
+    if (score < 30) return "text-[#3a0ca3]"; // Very Conservative
+    if (score < 40) return "text-[#4361ee]"; // Conservative
+    if (score < 45) return "text-[#3a86ff]"; // Leaning Conservative
+    if (score >= 45 && score <= 55) return "text-[#06d6a0]"; // Neutral/Centrist
+    if (score < 65) return "text-[#f72585]"; // Leaning Liberal
+    if (score < 75) return "text-[#7209b7]"; // Liberal
+    return "text-[#9d4edd]"; // Very Liberal
   };
 
   const getBiasPosition = (score: number) => {
@@ -239,35 +243,38 @@ export default function AnalysisTab() {
                     </div>
                     <h4 className="text-lg font-medium text-white">Multidimensional Bias Analysis</h4>
                   </div>
-                  <div className="bg-gray-900 p-4 rounded-lg border border-gray-800">
-                    <BiasRadarChart 
+                  <div className="bg-slate-800 p-4 rounded-lg border border-slate-700">
+                    <BiasBarChart 
                       data={[
                         { 
                           name: 'Bias', 
-                          value: latestAnalysis.multidimensionalAnalysis.bias || 50, 
-                          fullMark: 100 
+                          value: latestAnalysis.multidimensionalAnalysis.bias || 50,
+                          explanation: "Measures political leaning and overall bias in the article"
                         },
                         { 
                           name: 'Emotional', 
-                          value: latestAnalysis.multidimensionalAnalysis.emotional || 50, 
-                          fullMark: 100 
+                          value: latestAnalysis.multidimensionalAnalysis.emotional || 50,
+                          explanation: "Measures use of emotional language"
                         },
                         { 
                           name: 'Factual', 
-                          value: latestAnalysis.multidimensionalAnalysis.factual || 50, 
-                          fullMark: 100 
+                          value: latestAnalysis.multidimensionalAnalysis.factual || 50,
+                          explanation: "Measures factual reporting and objectivity"
                         },
                         { 
                           name: 'Political', 
-                          value: latestAnalysis.multidimensionalAnalysis.political || 50, 
-                          fullMark: 100 
+                          value: latestAnalysis.multidimensionalAnalysis.political || 50,
+                          explanation: "Measures political content and framing"
                         },
                         { 
                           name: 'Neutral', 
-                          value: latestAnalysis.multidimensionalAnalysis.neutralLanguage || 50, 
-                          fullMark: 100 
+                          value: latestAnalysis.multidimensionalAnalysis.neutralLanguage || 50,
+                          explanation: "Measures neutral language and presentation"
                         },
                       ]}
+                      domain={[0, 100]}
+                      horizontal={true}
+                      height={300}
                     />
                     
                     <div className="grid grid-cols-5 gap-2 mt-4 text-center text-xs">

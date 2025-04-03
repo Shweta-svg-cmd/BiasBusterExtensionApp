@@ -256,25 +256,8 @@ export async function compareSources(request: SourceComparisonRequest): Promise<
   try {
     const { topic } = request;
     
-    // Standard sources to compare across - regardless of what was requested
-    const standardSources = [
-      "New York Times", 
-      "Wall Street Journal", 
-      "Fox News", 
-      "CNN", 
-      "BBC", 
-      "Washington Post", 
-      "NPR"
-    ];
-    
-    // Ensure we're always fetching from standard sources
-    const enrichedRequest = {
-      topic,
-      sources: standardSources
-    };
-    
-    // Fetch real articles from NewsAPI
-    const sourceArticles = await fetchArticlesFromSources(enrichedRequest);
+    // Fetch real articles from NewsAPI from all available sources
+    const sourceArticles = await fetchArticlesFromSources(request);
     
     // Check if we have any articles to analyze
     const totalArticles = Object.values(sourceArticles).reduce(
@@ -287,13 +270,16 @@ export async function compareSources(request: SourceComparisonRequest): Promise<
     
     // Prepare content for OpenAI analysis
     const analysisPrompt = `
-    Find articles about the EXACT SAME news event or story across different sources, and compare only their bias scores.
+    I need you to find and compare coverage of the EXACT SAME news event across different sources. This is critical - only compare sources covering the identical story.
+
+    I'll provide headlines and excerpts from various news sources on the topic "${topic}".
     
-    I'll provide headlines and excerpts from various news sources on the topic "${topic}". Your task is to:
-    
-    1. Identify which sources are covering the EXACT SAME specific news event or story
-    2. For those sources covering the same story, determine the bias score (0-100, where 0 is completely neutral and 100 is extremely biased)
-    3. Provide just a one-sentence explanation of their political leaning and how it influenced their coverage
+    Your task:
+    1. FIRST, carefully examine all headlines and excerpts to identify which sources are covering the EXACT SAME specific news event
+    2. EXCLUDE any sources covering different events or aspects of ${topic}
+    3. For sources covering the identical story, determine:
+       - A bias score (0-100), where 50 is completely neutral, below 50 leans conservative, above 50 leans liberal
+       - A brief explanation of how bias manifests in their coverage
     
     Here are the articles from each source:
     ${Object.entries(sourceArticles).map(([source, articles]) => {
@@ -304,7 +290,7 @@ export async function compareSources(request: SourceComparisonRequest): Promise<
       const description = article.description || "";
       const content = article.content || "";
       // Combine and limit to a reasonable length for analysis
-      const excerpt = (description + " " + content).slice(0, 500);
+      const excerpt = (description + " " + content).slice(0, 800);
       
       return `
       ${source}:
@@ -314,17 +300,19 @@ export async function compareSources(request: SourceComparisonRequest): Promise<
       `;
     }).join('\n\n')}
     
-    Format your response as a JSON object with a "results" array containing objects with these properties for each source that covers the EXACT SAME story:
-    - source: string (news source name)
-    - headline: string (the actual headline)
-    - biasScore: number (bias rating from 0-100)
-    - politicalLeaning: string (one of "Conservative", "Liberal", "Moderate Conservative", "Moderate Liberal", or "Centrist")
-    - explanation: string (a brief one-sentence explanation of the bias)
+    FORMAT RULES:
+    1. Return a JSON object with an array called "results"
+    2. Include ONLY sources covering the EXACT SAME news story
+    3. Each result object should have:
+       - source: string (news source name)
+       - headline: string (the headline)
+       - biasScore: number (0-100, with 50 being neutral)
+       - politicalLeaning: string (one of "Conservative", "Liberal", "Moderate Conservative", "Moderate Liberal", or "Centrist")
+       - explanation: string (one-sentence explanation of the bias)
     
-    Ensure you only include sources in the results array that are covering the EXACT SAME news event or story.
-    If different sources are covering different news events, create separate arrays for each event.
+    IMPORTANT: I need at least 3 sources covering the same story. If you can't find 3+ sources covering the identical story, identify a different story within these articles that is covered by at least 3 sources.
     
-    Important: Your response should focus ONLY on comparing the bias in coverage of the EXACT SAME news story across different sources. Do not include analysis of different stories or articles that do not cover the same event.
+    Focus on finding the HIGHEST number of sources covering the SAME story.
     `;
 
     // Call OpenAI to analyze the real articles

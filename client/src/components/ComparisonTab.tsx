@@ -8,15 +8,23 @@ import { Article, SourceComparisonResult } from "@shared/schema";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
-// Define source colors for consistent display across charts
+// Define source colors for consistent display across charts with an aesthetic palette
 const SOURCE_COLORS: Record<string, string> = {
-  "New York Times": "#8b5cf6", // violet-500
-  "Wall Street Journal": "#3b82f6", // blue-500
-  "Fox News": "#ef4444", // red-500
-  "CNN": "#ec4899", // pink-500
-  "BBC": "#6366f1", // indigo-500
-  "Washington Post": "#f97316", // orange-500
-  "NPR": "#10b981", // emerald-500
+  "New York Times": "#9d4edd", // purple-orchid
+  "Wall Street Journal": "#3a86ff", // blue-azure 
+  "Fox News": "#ff9e00", // yellow-orange
+  "CNN": "#ff52a2", // pink-magenta
+  "BBC": "#4361ee", // royal-blue
+  "Washington Post": "#f72585", // hot-pink
+  "NPR": "#06d6a0", // teal-green
+  "ABC News": "#118ab2", // steel-blue
+  "CBS News": "#073b4c", // dark-blue
+  "Reuters": "#7209b7", // purple-violet
+  "Politico": "#8a5a44", // brown-sienna
+  "USA Today": "#5390d9", // blue-sky
+  "The Hill": "#c77dff", // lavender-purple
+  "MSNBC": "#3a0ca3", // indigo-dark
+  "The Guardian": "#d62828", // cinnabar-red
 };
 
 // Get color for a source (or fallback)
@@ -75,19 +83,23 @@ export default function ComparisonTab() {
   };
 
   const getBiasLabel = (score: number) => {
-    if (score < 35) return "Conservative";
+    if (score < 30) return "Very Conservative";
+    if (score < 40) return "Conservative";
     if (score < 45) return "Leaning Conservative";
     if (score >= 45 && score <= 55) return "Neutral/Centrist";
     if (score < 65) return "Leaning Liberal";
-    return "Liberal";
+    if (score < 75) return "Liberal";
+    return "Very Liberal";
   };
 
   const getBiasLabelColor = (score: number) => {
-    if (score < 35) return "text-blue-500"; // Conservative
-    if (score < 45) return "text-blue-400"; // Somewhat Conservative
-    if (score >= 45 && score <= 55) return "text-green-500"; // Neutral
-    if (score < 65) return "text-red-400"; // Somewhat liberal
-    return "text-red-500"; // Liberal
+    if (score < 30) return "text-[#3a0ca3]"; // Very Conservative
+    if (score < 40) return "text-[#4361ee]"; // Conservative
+    if (score < 45) return "text-[#3a86ff]"; // Leaning Conservative
+    if (score >= 45 && score <= 55) return "text-[#06d6a0]"; // Neutral/Centrist
+    if (score < 65) return "text-[#f72585]"; // Leaning Liberal
+    if (score < 75) return "text-[#7209b7]"; // Liberal
+    return "text-[#9d4edd]"; // Very Liberal
   };
 
   // Prepare data for bar chart visualization
@@ -178,10 +190,11 @@ export default function ComparisonTab() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="h-[300px]">
+                <div className="h-[400px]">
                   <BiasBarChart 
                     data={prepareBarChartData()} 
-                    horizontal={true}
+                    horizontal={false}
+                    domain={[0, 100]}
                   />
                 </div>
               </CardContent>

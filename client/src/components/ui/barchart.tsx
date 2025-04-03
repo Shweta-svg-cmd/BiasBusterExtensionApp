@@ -57,15 +57,13 @@ const NEUTRAL_COLORS = [
 ];
 
 const BIAS_COLORS = [
-  '#1d4ed8', // blue-700 Conservative
-  '#2563eb', // blue-600
-  '#3b82f6', // blue-500
-  '#60a5fa', // blue-400
-  '#22c55e', // green-500 Neutral
-  '#ef4444', // red-500
-  '#f87171', // red-400
-  '#dc2626', // red-600
-  '#b91c1c', // red-700 Liberal
+  '#3a0ca3', // indigo-dark - Very Conservative
+  '#4361ee', // royal-blue - Conservative
+  '#3a86ff', // blue-azure - Leaning Conservative
+  '#06d6a0', // teal-green - Neutral/Centrist
+  '#f72585', // hot-pink - Leaning Liberal
+  '#7209b7', // purple-violet - Liberal
+  '#9d4edd', // purple-orchid - Very Liberal
 ];
 
 // Custom tooltip component
@@ -75,23 +73,42 @@ const CustomTooltip = ({ active, payload, label, colorScheme }: CustomTooltipPro
     const value = payload[0].value;
     const formattedValue = typeof value === 'number' ? value.toFixed(0) : value;
     const category = data.category || '';
+    const explanation = data.explanation || '';
     
     // Choose a color based on the value or category if available
-    let bgColor = '#1e293b'; // slate-800
     let borderColor = '#3b82f6'; // blue-500
     
     if (data.colorIndex !== undefined && colorScheme && colorScheme[data.colorIndex]) {
       borderColor = colorScheme[data.colorIndex];
     }
 
+    // Get label for the bias score
+    const getBiasLabel = (score: number) => {
+      if (score < 30) return "Very Conservative";
+      if (score < 40) return "Conservative";
+      if (score < 45) return "Leaning Conservative";
+      if (score >= 45 && score <= 55) return "Neutral/Centrist";
+      if (score < 65) return "Leaning Liberal";
+      if (score < 75) return "Liberal";
+      return "Very Liberal";
+    };
+
     return (
-      <div className="bg-slate-800 border border-slate-700 shadow-lg rounded-md px-3 py-2 text-sm">
-        <p className="font-medium text-slate-200">{label}</p>
-        {category && <p className="text-slate-300">{category}</p>}
-        <p className="font-medium mt-1">
-          <span className="text-slate-400">Score: </span>
-          <span className="text-slate-200">{formattedValue}</span>
-        </p>
+      <div className="bg-slate-800 border border-slate-700 shadow-lg rounded-md px-4 py-3 text-sm"
+           style={{ borderLeft: `4px solid ${borderColor}` }}>
+        <p className="font-bold text-slate-100 text-base">{label}</p>
+        {category && (
+          <p className="text-slate-300 mt-1">{category}</p>
+        )}
+        <div className="mt-2 flex items-center">
+          <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: borderColor }}></div>
+          <span className="font-medium text-slate-200">
+            Score: {formattedValue} - {getBiasLabel(Number(formattedValue))}
+          </span>
+        </div>
+        {explanation && (
+          <p className="mt-2 text-slate-400 text-xs italic border-t border-slate-700 pt-2">{explanation}</p>
+        )}
       </div>
     );
   }
@@ -116,11 +133,13 @@ export const BiasBarChart = ({
   // (lower values are blue, middle is green, higher values are red)
   const getColorIndex = (value: number) => {
     if (domain[1] === 100) { // Assuming this is bias data
-      if (value < 35) return 0; // Conservative bias
-      if (value < 45) return 1; 
-      if (value >= 45 && value <= 55) return 4; // Neutral
-      if (value < 65) return 6;
-      return 8; // Liberal bias
+      if (value < 30) return 0; // Very Conservative bias
+      if (value < 40) return 1; // Conservative bias 
+      if (value < 45) return 2; // Leaning Conservative
+      if (value >= 45 && value <= 55) return 3; // Neutral/Centrist
+      if (value < 65) return 4; // Leaning Liberal
+      if (value < 75) return 5; // Liberal
+      return 6; // Very Liberal bias
     }
     // For other data types, distribute colors evenly
     return Math.floor((value / domain[1]) * (colorScheme.length - 1));
@@ -163,11 +182,18 @@ export const BiasBarChart = ({
               formatter={tooltipFormatter}
               labelFormatter={tooltipLabelFormatter}
             />
-            <Bar dataKey={dataKey} radius={[0, 4, 4, 0]}>
+            <Bar 
+              dataKey={dataKey} 
+              radius={[0, 4, 4, 0]} 
+              barSize={30}
+              animationDuration={1000}
+            >
               {dataWithColors.map((entry, index) => (
                 <Cell 
                   key={`cell-${index}`} 
-                  fill={chosenColorScheme[entry.colorIndex || index % chosenColorScheme.length]} 
+                  fill={chosenColorScheme[entry.colorIndex || index % chosenColorScheme.length]}
+                  stroke="#0f172a"
+                  strokeWidth={1}
                 />
               ))}
             </Bar>
@@ -197,11 +223,18 @@ export const BiasBarChart = ({
               formatter={tooltipFormatter}
               labelFormatter={tooltipLabelFormatter}
             />
-            <Bar dataKey={dataKey} radius={[4, 4, 0, 0]}>
+            <Bar 
+              dataKey={dataKey} 
+              radius={[4, 4, 0, 0]} 
+              barSize={45}
+              animationDuration={1000}
+            >
               {dataWithColors.map((entry, index) => (
                 <Cell 
                   key={`cell-${index}`} 
-                  fill={chosenColorScheme[entry.colorIndex || index % chosenColorScheme.length]} 
+                  fill={chosenColorScheme[entry.colorIndex || index % chosenColorScheme.length]}
+                  stroke="#0f172a"
+                  strokeWidth={1}
                 />
               ))}
             </Bar>
