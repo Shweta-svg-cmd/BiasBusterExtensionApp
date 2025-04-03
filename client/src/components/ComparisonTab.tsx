@@ -208,7 +208,6 @@ export default function ComparisonTab() {
                     <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Source</th>
                     <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Headline</th>
                     <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Bias Score</th>
-                    <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Explanation</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-700">
@@ -238,9 +237,6 @@ export default function ComparisonTab() {
                         <span className={`text-xs ${getBiasLabelColor(result.biasScore)}`}>
                           {getBiasLabel(result.biasScore)}
                         </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-300">
-                        {result.explanation}
                       </td>
                     </tr>
                   ))}
