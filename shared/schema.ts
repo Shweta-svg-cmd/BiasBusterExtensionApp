@@ -26,7 +26,18 @@ export const articles = pgTable("articles", {
   biasAnalysis: text("bias_analysis"),
   neutralText: text("neutral_text"),
   analyzedAt: timestamp("analyzed_at").defaultNow().notNull(),
-  biasedPhrases: json("biased_phrases").$type<Array<BiasedPhrase>>()
+  biasedPhrases: json("biased_phrases").$type<Array<BiasedPhrase>>(),
+  politicalLeaning: text("political_leaning"),
+  emotionalLanguage: text("emotional_language"),
+  factualReporting: text("factual_reporting"),
+  topics: json("topics").$type<{ main: string; related: string[] }>(),
+  multidimensionalAnalysis: json("multidimensional_analysis").$type<{
+    bias: number;
+    emotional: number;
+    factual: number;
+    political: number;
+    neutralLanguage: number;
+  }>()
 });
 
 export const insertArticleSchema = createInsertSchema(articles).pick({
@@ -38,6 +49,11 @@ export const insertArticleSchema = createInsertSchema(articles).pick({
   biasAnalysis: true,
   neutralText: true,
   biasedPhrases: true,
+  politicalLeaning: true,
+  emotionalLanguage: true,
+  factualReporting: true,
+  topics: true,
+  multidimensionalAnalysis: true,
 });
 
 export type BiasedPhrase = {
@@ -64,4 +80,5 @@ export type SourceComparisonResult = {
   biasScore: number;
   keyNarrative: string;
   contentAnalysis: string[];
+  politicalLeaning?: string;
 };

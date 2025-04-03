@@ -17,7 +17,7 @@ export default function AnalysisTab() {
   const { toast } = useToast();
   const { analyzeArticle } = useAnalysis();
 
-  const { data: recentArticles } = useQuery({
+  const { data: recentArticles } = useQuery<Article[]>({
     queryKey: ["/api/articles/recent"],
     staleTime: 60000,
   });
@@ -54,7 +54,9 @@ export default function AnalysisTab() {
     }
   };
 
-  const handleCopyNeutral = (neutralText: string) => {
+  const handleCopyNeutral = (neutralText: string | null) => {
+    if (!neutralText) return;
+    
     navigator.clipboard.writeText(neutralText);
     toast({
       title: "Copied to clipboard",
@@ -188,22 +190,115 @@ export default function AnalysisTab() {
 
               {/* Bias Score */}
               <div className="mb-6">
-                <h4 className="text-sm font-medium text-neutral-medium mb-2">Bias Score</h4>
-                <BiasScale score={latestAnalysis.biasScore} />
-                <div className="text-center mt-6">
-                  <span className={`text-lg font-semibold ${getBiasLabelColor(latestAnalysis.biasScore)}`}>
-                    {getBiasLabel(latestAnalysis.biasScore)}
-                  </span>
-                  <span className="text-sm text-neutral-medium ml-2">
-                    ({latestAnalysis.biasScore})
-                  </span>
+                <h4 className="text-sm font-medium text-neutral-medium mb-2">Overall Bias Score</h4>
+                <BiasScale 
+                  score={latestAnalysis.biasScore} 
+                  maxScore={100} // Using new 0-100 scale
+                />
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                  <div className="bg-slate-800 rounded-md p-3 text-center">
+                    <div className="text-sm text-gray-400">Political Leaning</div>
+                    <div className="text-lg font-medium text-white mt-1">
+                      {latestAnalysis.politicalLeaning || "Centrist"}
+                    </div>
+                  </div>
+                  <div className="bg-slate-800 rounded-md p-3 text-center">
+                    <div className="text-sm text-gray-400">Emotional Language</div>
+                    <div className="text-lg font-medium text-white mt-1">
+                      {latestAnalysis.emotionalLanguage || "Moderate"}
+                    </div>
+                  </div>
+                  <div className="bg-slate-800 rounded-md p-3 text-center">
+                    <div className="text-sm text-gray-400">Factual Reporting</div>
+                    <div className="text-lg font-medium text-white mt-1">
+                      {latestAnalysis.factualReporting || "Moderate"}
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Bias Analysis */}
+              {/* Multidimensional Analysis */}
+              {latestAnalysis.multidimensionalAnalysis && (
+                <div className="mb-6">
+                  <h4 className="text-sm font-medium text-neutral-medium mb-2">Multidimensional Bias Analysis</h4>
+                  <div className="bg-slate-900 p-4 rounded-lg">
+                    <div className="h-64 w-full relative flex items-center justify-center">
+                      {/* Spider chart visualization (simplified static version) */}
+                      <div className="relative w-full h-full">
+                        {/* Background grid */}
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="h-[80%] w-[80%] border border-gray-700 opacity-50 rotate-45"></div>
+                          <div className="h-[60%] w-[60%] border border-gray-700 opacity-50 absolute rotate-45"></div>
+                          <div className="h-[40%] w-[40%] border border-gray-700 opacity-50 absolute rotate-45"></div>
+                          <div className="h-[20%] w-[20%] border border-gray-700 opacity-50 absolute rotate-45"></div>
+                        </div>
+                        
+                        {/* Polygon shape for the values (using CSS clip-path) */}
+                        <div 
+                          className="absolute inset-0 flex items-center justify-center" 
+                          style={{
+                            clipPath: latestAnalysis.multidimensionalAnalysis 
+                              ? `polygon(
+                                  50% ${100 - latestAnalysis.multidimensionalAnalysis.bias * 0.8}%, 
+                                  ${50 + latestAnalysis.multidimensionalAnalysis.emotional * 0.4}% ${50 + latestAnalysis.multidimensionalAnalysis.emotional * 0.4}%, 
+                                  ${100 - latestAnalysis.multidimensionalAnalysis.factual * 0.8}% 50%, 
+                                  ${50 - latestAnalysis.multidimensionalAnalysis.political * 0.4}% ${50 + latestAnalysis.multidimensionalAnalysis.political * 0.4}%, 
+                                  50% ${latestAnalysis.multidimensionalAnalysis.neutralLanguage * 0.8}%
+                                )`
+                              : ''
+                          }}
+                        >
+                          <div className="h-full w-full bg-gradient-to-br from-emerald-500/30 to-emerald-500/60 rotate-45">
+                          </div>
+                        </div>
+                        
+                        {/* Axes Labels */}
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 text-xs text-gray-400">Bias</div>
+                        <div className="absolute right-0 top-1/2 translate-y-1/2 translate-x-2 text-xs text-gray-400">Emotional</div>
+                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-2 text-xs text-gray-400">Neutral Language</div>
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 text-xs text-gray-400">Political</div>
+                        <div className="absolute top-1/2 right-1/4 text-xs text-gray-400">Factual</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Article Topics */}
+              {latestAnalysis.topics && (
+                <div className="mb-6">
+                  <h4 className="text-sm font-medium text-neutral-medium mb-2">Article Topics</h4>
+                  <div className="bg-slate-800 p-4 rounded-lg">
+                    <div>
+                      <span className="text-xs text-gray-400">Main topic:</span>
+                      <div className="inline-block ml-2 bg-indigo-600 text-white rounded-full px-3 py-1 text-sm font-semibold">
+                        {latestAnalysis.topics.main || "General"}
+                      </div>
+                    </div>
+                    
+                    {latestAnalysis.topics.related && latestAnalysis.topics.related.length > 0 && (
+                      <div className="mt-2">
+                        <span className="text-xs text-gray-400">Related topics:</span>
+                        <div className="flex flex-wrap gap-2 mt-1">
+                          {latestAnalysis.topics.related.map((topic, index) => (
+                            <div key={index} className="bg-slate-700 text-white rounded-full px-3 py-1 text-xs">
+                              {topic}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Key Findings */}
               <div className="mb-6">
-                <h4 className="text-sm font-medium text-neutral-medium mb-2">Analysis Summary</h4>
-                <p className="text-sm text-neutral-dark">{latestAnalysis.biasAnalysis}</p>
+                <h4 className="text-sm font-medium text-neutral-medium mb-2">Key Findings</h4>
+                <div className="bg-slate-800 p-4 rounded-lg">
+                  <p className="text-sm text-gray-300">{latestAnalysis.biasAnalysis}</p>
+                </div>
               </div>
 
               {/* Identified Biased Phrases */}

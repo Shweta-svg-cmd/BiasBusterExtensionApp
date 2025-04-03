@@ -72,10 +72,24 @@ async function extractTextFromUrl(url: string): Promise<{
 
 type BiasAnalysisResponse = {
   title: string;
-  biasScore: number; // -10 to 10, negative is conservative, positive is liberal
+  biasScore: number; // 0 to 100, with 0 being completely unbiased
+  politicalLeaning: string; // "Conservative" | "Liberal" | "Centrist"
+  emotionalLanguage: string; // "Low" | "Moderate" | "High"
+  factualReporting: string; // "Low" | "Moderate" | "High"
   biasAnalysis: string;
   neutralText: string;
   biasedPhrases: BiasedPhrase[];
+  topics: {
+    main: string;
+    related: string[];
+  };
+  multidimensionalAnalysis: {
+    bias: number; // 0-100
+    emotional: number; // 0-100
+    factual: number; // 0-100
+    political: number; // 0-100
+    neutralLanguage: number; // 0-100
+  };
 };
 
 export async function analyzeArticle(request: ArticleAnalysisRequest): Promise<{
@@ -86,6 +100,20 @@ export async function analyzeArticle(request: ArticleAnalysisRequest): Promise<{
   biasAnalysis: string;
   neutralText: string;
   biasedPhrases: BiasedPhrase[];
+  politicalLeaning: string;
+  emotionalLanguage: string;
+  factualReporting: string;
+  topics: {
+    main: string;
+    related: string[];
+  };
+  multidimensionalAnalysis: {
+    bias: number;
+    emotional: number;
+    factual: number;
+    political: number;
+    neutralLanguage: number;
+  };
 }> {
   try {
     let articleContent: string;
@@ -111,7 +139,7 @@ export async function analyzeArticle(request: ArticleAnalysisRequest): Promise<{
 
     // Call OpenAI for analysis
     const prompt = `
-    Analyze the following news article for political bias. The article is delimited by triple backticks.
+    Analyze the following news article for political bias and provide a comprehensive evaluation. The article is delimited by triple backticks.
     
     \`\`\`
     ${articleContent}
@@ -119,10 +147,20 @@ export async function analyzeArticle(request: ArticleAnalysisRequest): Promise<{
     
     Provide your analysis in JSON format with the following fields:
     - title: The title of the article (if not obvious, make a reasonable guess)
-    - biasScore: A number from -10 (extremely conservative) to 10 (extremely liberal), with 0 being perfectly neutral
+    - biasScore: A number from 0 (completely unbiased) to 100 (extremely biased)
+    - politicalLeaning: One of "Conservative", "Liberal", or "Centrist"
+    - emotionalLanguage: One of "Low", "Moderate", or "High"
+    - factualReporting: One of "Low", "Moderate", or "High"
     - biasAnalysis: A 2-3 paragraph explanation of the bias you detected and why
     - neutralText: A rewrite of a portion of the article in completely neutral language
     - biasedPhrases: An array of objects with "text" (the biased phrase) and "explanation" (why it's biased)
+    - topics: An object with "main" (the primary topic) and "related" (an array of related topics like "Politics", "Economy", "Crime", etc.)
+    - multidimensionalAnalysis: An object with numeric scores from 0-100 for these dimensions:
+        * bias: Overall bias level (0=unbiased, 100=extremely biased)
+        * emotional: Use of emotional language (0=purely factual, 100=highly emotional)
+        * factual: Factual accuracy (0=opinion-based, 100=strictly factual)
+        * political: Political slant (0=no political angle, 100=heavily political)
+        * neutralLanguage: Use of neutral language (0=heavily loaded language, 100=completely neutral)
     
     Focus on identifying loaded language, emotional appeals, opinion presented as fact, selective facts, framing, and labeling. Look at the overall tone and presentation, not just individual words.
     `;
@@ -131,9 +169,10 @@ export async function analyzeArticle(request: ArticleAnalysisRequest): Promise<{
       model: "gpt-4o",
       messages: [{ role: "user", content: prompt }],
       response_format: { type: "json_object" },
+      max_tokens: 2000,
     });
 
-    const result = JSON.parse(response.choices[0].message.content) as BiasAnalysisResponse;
+    const result = JSON.parse(response.choices[0].message.content || "{}") as BiasAnalysisResponse;
     
     return {
       title: result.title || title,
@@ -143,6 +182,17 @@ export async function analyzeArticle(request: ArticleAnalysisRequest): Promise<{
       biasAnalysis: result.biasAnalysis,
       neutralText: result.neutralText,
       biasedPhrases: result.biasedPhrases,
+      politicalLeaning: result.politicalLeaning || "Centrist",
+      emotionalLanguage: result.emotionalLanguage || "Moderate",
+      factualReporting: result.factualReporting || "Moderate",
+      topics: result.topics || { main: "General", related: [] },
+      multidimensionalAnalysis: result.multidimensionalAnalysis || {
+        bias: 50,
+        emotional: 50,
+        factual: 50,
+        political: 50,
+        neutralLanguage: 50
+      }
     };
   } catch (error) {
     throw new Error(`Failed to analyze article: ${error instanceof Error ? error.message : "Unknown error"}`);
@@ -159,18 +209,20 @@ export async function compareSources(request: SourceComparisonRequest): Promise<
     
     For each of these news sources: ${sources.join(', ')}, create:
     1. A plausible headline they might use
-    2. A bias score from -10 (extremely conservative) to 10 (extremely liberal)
+    2. A bias score from 0 (completely neutral/unbiased) to 100 (extremely biased)
     3. A brief description of their key narrative approach
     4. Three example sentences from their hypothetical coverage, highlighting biased language in <span> tags with appropriate classes:
-       - Liberal bias: <span class="bg-green-100">liberal biased text</span>
+       - Liberal bias: <span class="bg-blue-100">liberal biased text</span>
        - Conservative bias: <span class="bg-red-100">conservative biased text</span>
+       - Neutral factual: <span class="bg-green-100">neutral factual text</span>
     
     Format the response as a JSON array of objects, each with the properties:
     - source: string (the news source name)
     - headline: string (the hypothetical headline)
-    - biasScore: number (the bias rating)
+    - biasScore: number (the bias rating from 0-100)
     - keyNarrative: string (brief description of narrative approach)
     - contentAnalysis: string[] (array of example content with spans marking bias)
+    - politicalLeaning: string (one of "Conservative", "Liberal", or "Centrist")
     
     Be nuanced and realistic in your assessment, recognizing the actual editorial tendencies of each source.
     `;
@@ -179,9 +231,10 @@ export async function compareSources(request: SourceComparisonRequest): Promise<
       model: "gpt-4o",
       messages: [{ role: "user", content: prompt }],
       response_format: { type: "json_object" },
+      max_tokens: 2000,
     });
 
-    const result = JSON.parse(response.choices[0].message.content);
+    const result = JSON.parse(response.choices[0].message.content || "{}");
     
     // Parse the result - ensuring it has the expected structure
     if (Array.isArray(result)) {

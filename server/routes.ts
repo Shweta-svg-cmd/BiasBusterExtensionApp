@@ -27,6 +27,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         biasAnalysis: result.biasAnalysis,
         neutralText: result.neutralText,
         biasedPhrases: result.biasedPhrases,
+        politicalLeaning: result.politicalLeaning,
+        emotionalLanguage: result.emotionalLanguage,
+        factualReporting: result.factualReporting,
+        topics: result.topics,
+        multidimensionalAnalysis: result.multidimensionalAnalysis,
       });
       
       res.json(article);

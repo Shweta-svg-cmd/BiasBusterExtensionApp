@@ -40,18 +40,21 @@ export default function HistoryTab() {
     setCurrentPage(1); // Reset to first page on new filter
   };
 
+  // Updated for 0-100 scale
   const getBiasLabel = (score: number) => {
-    if (score <= -5) return "Conservative";
-    if (score < 0) return "Conservative";
-    if (score === 0) return "Neutral";
-    if (score < 5) return "Liberal";
+    if (score < 35) return "Conservative";
+    if (score < 45) return "Leaning Conservative";
+    if (score >= 45 && score <= 55) return "Neutral/Centrist";
+    if (score < 65) return "Leaning Liberal";
     return "Liberal";
   };
 
   const getBiasLabelColor = (score: number) => {
-    if (score < 0) return "text-status-error";
-    if (score === 0) return "text-status-warning";
-    return "text-status-success";
+    if (score < 35) return "text-blue-500"; // Conservative
+    if (score < 45) return "text-blue-400"; // Somewhat Conservative
+    if (score >= 45 && score <= 55) return "text-green-500"; // Neutral
+    if (score < 65) return "text-red-400"; // Somewhat liberal
+    return "text-red-500"; // Liberal
   };
 
   return (
@@ -92,46 +95,48 @@ export default function HistoryTab() {
           </div>
         ) : (
           <>
-            <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-              <table className="min-w-full divide-y divide-gray-300">
-                <thead className="bg-gray-50">
+            <div className="overflow-hidden shadow ring-1 ring-slate-700 rounded-lg">
+              <table className="min-w-full divide-y divide-slate-700">
+                <thead className="bg-slate-800">
                   <tr>
-                    <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-neutral-medium sm:pl-6">Article Title</th>
-                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-neutral-medium">Source</th>
-                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-neutral-medium">Date Analyzed</th>
-                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-neutral-medium">Bias Rating</th>
+                    <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider sm:pl-6">Article Title</th>
+                    <th scope="col" className="px-3 py-3.5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Source</th>
+                    <th scope="col" className="px-3 py-3.5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Date Analyzed</th>
+                    <th scope="col" className="px-3 py-3.5 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">Bias Rating</th>
                     <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-6">
                       <span className="sr-only">Actions</span>
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200 bg-white">
+                <tbody className="divide-y divide-slate-700 bg-slate-900">
                   {filteredItems.length > 0 ? (
-                    filteredItems.map((item) => (
-                      <tr key={item.id}>
-                        <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-neutral-dark sm:pl-6">
+                    filteredItems.map((item, index) => (
+                      <tr key={item.id} className={index % 2 === 0 ? 'bg-slate-900' : 'bg-slate-800/50'}>
+                        <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-300 sm:pl-6">
                           {item.title}
                         </td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-neutral-medium">{item.source || 'Unknown'}</td>
-                        <td className="whitespace-nowrap px-3 py-4 text-sm text-neutral-medium">
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-400">{item.source || 'Unknown'}</td>
+                        <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-400">
                           {new Date(item.analyzedAt).toLocaleDateString()}
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 text-sm">
                           <div className="w-24">
-                            <BiasScale score={item.biasScore} mini />
+                            <BiasScale score={item.biasScore} mini maxScore={100} />
                           </div>
                           <span className={`text-xs ${getBiasLabelColor(item.biasScore)}`}>
                             {getBiasLabel(item.biasScore)}
                           </span>
                         </td>
                         <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                          <a href="#" className="text-primary hover:text-blue-900">View<span className="sr-only">, item</span></a>
+                          <button className="text-primary hover:text-blue-400 transition-colors">
+                            View details
+                          </button>
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={5} className="py-8 text-center text-sm text-neutral-medium">
+                      <td colSpan={5} className="py-8 text-center text-sm text-gray-400">
                         No results found
                       </td>
                     </tr>

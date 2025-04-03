@@ -1,4 +1,4 @@
-import { articles, insertArticleSchema, type Article, type InsertArticle, users, type User, type InsertUser } from "@shared/schema";
+import { articles, insertArticleSchema, type Article, type InsertArticle, users, type User, type InsertUser, type BiasedPhrase } from "@shared/schema";
 import { z } from "zod";
 
 export interface IStorage {
@@ -49,10 +49,29 @@ export class MemStorage implements IStorage {
     const id = this.articleIdCounter++;
     const now = new Date();
     
+    // Process and ensure all fields have non-undefined values
     const article: Article = {
-      ...insertArticle,
       id,
+      title: insertArticle.title,
+      content: insertArticle.content,
+      biasScore: insertArticle.biasScore,
       analyzedAt: now,
+      source: insertArticle.source || null,
+      url: insertArticle.url || null,
+      biasAnalysis: insertArticle.biasAnalysis || null,
+      neutralText: insertArticle.neutralText || null,
+      biasedPhrases: insertArticle.biasedPhrases 
+        ? (insertArticle.biasedPhrases as BiasedPhrase[])
+        : null,
+      politicalLeaning: insertArticle.politicalLeaning || null,
+      emotionalLanguage: insertArticle.emotionalLanguage || null,
+      factualReporting: insertArticle.factualReporting || null,
+      topics: insertArticle.topics ? {
+        main: insertArticle.topics.main,
+        related: Array.isArray(insertArticle.topics.related) ? 
+          Array.from(insertArticle.topics.related) as string[] : []
+      } : null,
+      multidimensionalAnalysis: insertArticle.multidimensionalAnalysis || null,
     };
     
     this.articlesMap.set(id, article);
