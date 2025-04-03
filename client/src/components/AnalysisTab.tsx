@@ -441,17 +441,7 @@ export default function AnalysisTab() {
           </CardContent>
         </Card>
 
-        {/* Download Extension */}
-        <div className="bg-gradient-to-r from-blue-900 to-blue-700 rounded-lg shadow-sm p-6 text-white">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Chrome Extension</h2>
-            <span>🧩</span>
-          </div>
-          <p className="text-sm mb-4">Analyze news articles directly while browsing with our Chrome extension.</p>
-          <Button className="w-full bg-white text-blue-900 hover:bg-opacity-90 transition-all">
-            Add to Chrome
-          </Button>
-        </div>
+
       </div>
     </div>
   );
